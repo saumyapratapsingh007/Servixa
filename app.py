@@ -1,5 +1,3 @@
-from fastapi import FastAPI
-app = FastAPI()
-@app.get("/")
-def home():
-    return {"status":"ok"}
+from server.app import app
+
+__all__ = ["app"]
