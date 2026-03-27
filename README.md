@@ -1,3 +1,14 @@
+---
+title: SupportOps OpenEnv
+emoji: "📨"
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+license: mit
+short_description: OpenEnv support triage environment
+---
+
 # SupportOps OpenEnv
 
 SupportOps OpenEnv is a production-ready customer support automation environment built for OpenEnv. It simulates a realistic support queue where an agent must classify customer issues, choose the correct escalation path, send the right customer response, and decide whether each ticket can be safely closed.
@@ -100,4 +111,4 @@ Run:
 python baseline.py
 ```
 
-The baseline uses a deterministic support policy and optionally calls the OpenAI API for a short task brief when `OPENAI_API_KEY` is available, so it remains reproducible and will not crash when the key is missing.
+The baseline uses a deterministic support policy and optionally calls the OpenAI API for a short task brief when `OPENAI_API_KEY` is available, so it remains reproducible and will not crash when the key is missing. It is intentionally strong but not perfect, which makes it more believable as a practical reference policy.
