@@ -167,7 +167,7 @@ def root() -> str:
                   <a href="/grader" role="menuitem"><strong>Grader Output</strong><span>Inspect the current per-ticket scoring report.</span></a>
                 </div>
               </div>
-              <a class="nav-link" href="/health">Health</a>
+              <a class="nav-link" href="/status">Status</a>
             </div>
           </nav>
 
@@ -239,6 +239,7 @@ def root() -> str:
                 <a class="endpoint" href="/tasks"><div><strong>Task list</strong><small>See available scenarios, difficulty, and ticket counts.</small></div><code>/tasks</code></a>
                 <a class="endpoint" href="/schema"><div><strong>Schema</strong><small>Inspect the action, observation, and state models.</small></div><code>/schema</code></a>
                 <a class="endpoint" href="/baseline"><div><strong>Baseline performance</strong><small>Review benchmark results from the included reference policy.</small></div><code>/baseline</code></a>
+                <a class="endpoint" href="/status"><div><strong>Status page</strong><small>Open the human-friendly system health dashboard.</small></div><code>/status</code></a>
               </div>
             </article>
             <article class="panel stack span-4 reveal d3">
@@ -304,6 +305,92 @@ def root() -> str:
             }
           });
         </script>
+      </body>
+    </html>
+    """
+
+
+@app.get("/status", response_class=HTMLResponse)
+def status_page() -> str:
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Servixa Status</title>
+        <style>
+          :root { --bg:#07111f; --panel:rgba(10,19,33,.8); --line:rgba(148,163,184,.16); --text:#e5eefc; --muted:#9db0cc; --cyan:#67e8f9; --green:#34d399; --shadow:0 24px 60px rgba(2,8,23,.45); --t:260ms ease; }
+          * { box-sizing:border-box; }
+          body { margin:0; min-height:100vh; font-family:"Segoe UI",Arial,sans-serif; color:var(--text); background:radial-gradient(circle at top left, rgba(103,232,249,.14), transparent 34%), radial-gradient(circle at top right, rgba(52,211,153,.12), transparent 26%), linear-gradient(160deg,#04101d 0%,#081321 42%,#0d1830 100%); }
+          .wrap { width:min(980px, calc(100% - 28px)); margin:0 auto; padding:32px 0 48px; }
+          .panel { background:var(--panel); border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow); backdrop-filter:blur(20px); }
+          .topbar { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:18px 22px; margin-bottom:22px; }
+          .brand { display:flex; align-items:center; gap:12px; }
+          .mark { width:42px; height:42px; display:grid; place-items:center; border-radius:14px; background:linear-gradient(135deg, rgba(103,232,249,.24), rgba(52,211,153,.22)); color:var(--cyan); font-weight:800; }
+          .brand span, .muted { color:var(--muted); }
+          .link { display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:0 18px; border-radius:14px; border:1px solid rgba(103,232,249,.18); background:rgba(148,163,184,.05); transition:transform var(--t), box-shadow var(--t), border-color var(--t); }
+          .link:hover, .link:focus-visible { transform:translateY(-2px); border-color:rgba(103,232,249,.3); box-shadow:0 18px 36px rgba(2,8,23,.28); outline:none; }
+          .hero { padding:30px; margin-bottom:22px; }
+          .badge { display:inline-flex; align-items:center; gap:10px; padding:8px 14px; border-radius:999px; background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.18); color:#8ef3cb; font-size:.84rem; text-transform:uppercase; letter-spacing:.08em; }
+          .dot { width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 18px rgba(52,211,153,.65); animation:pulse 1.8s ease-in-out infinite; }
+          h1 { margin:18px 0 12px; font-size:clamp(2.4rem, 6vw, 4rem); line-height:1; letter-spacing:-.05em; }
+          p { margin:0; line-height:1.7; }
+          .grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-bottom:22px; }
+          .card { padding:22px; transition:transform var(--t), border-color var(--t), box-shadow var(--t); }
+          .card:hover { transform:translateY(-6px); border-color:rgba(103,232,249,.22); box-shadow:0 20px 42px rgba(2,8,23,.3); }
+          .card strong { display:block; margin-bottom:8px; font-size:1.2rem; }
+          code { display:inline-flex; padding:8px 12px; border-radius:12px; background:rgba(8,15,28,.82); border:1px solid rgba(103,232,249,.12); color:#caf5ff; }
+          .actions { display:flex; flex-wrap:wrap; gap:12px; padding:24px 30px 30px; }
+          @keyframes pulse { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.18); opacity:.8; } }
+          @media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+          @media (max-width:640px) { .topbar { flex-direction:column; align-items:flex-start; } .actions { flex-direction:column; } .link { width:100%; } }
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <div class="panel topbar">
+            <div class="brand">
+              <div class="mark">S</div>
+              <div>
+                <strong>Servixa Status</strong>
+                <span>Human-friendly health overview</span>
+              </div>
+            </div>
+            <a class="link" href="/">Back to Home</a>
+          </div>
+
+          <section class="panel hero">
+            <div class="badge"><span class="dot"></span>System Healthy</div>
+            <h1>Environment is online and ready.</h1>
+            <p class="muted">This page is for humans. Machine checks should still use <code>/health</code> and receive the raw API response as usual.</p>
+          </section>
+
+          <section class="grid">
+            <article class="panel card">
+              <strong>API Health</strong>
+              <p class="muted">The FastAPI service is responding normally.</p>
+              <div style="margin-top:14px;"><code>/health -> healthy</code></div>
+            </article>
+            <article class="panel card">
+              <strong>Environment Loop</strong>
+              <p class="muted">Core evaluation routes remain available for reset, step, state, grading, and baseline checks.</p>
+              <div style="margin-top:14px;"><code>/reset /step /state</code></div>
+            </article>
+            <article class="panel card">
+              <strong>Judge Flow</strong>
+              <p class="muted">Use the docs for exploration, the baseline for proof, and the grader for deterministic scoring.</p>
+              <div style="margin-top:14px;"><code>/docs /baseline /grader</code></div>
+            </article>
+          </section>
+
+          <section class="panel actions">
+            <a class="link" href="/docs">Open API Docs</a>
+            <a class="link" href="/health">Raw Health Endpoint</a>
+            <a class="link" href="/baseline">Baseline Results</a>
+            <a class="link" href="/tasks">Task List</a>
+          </section>
+        </div>
       </body>
     </html>
     """
