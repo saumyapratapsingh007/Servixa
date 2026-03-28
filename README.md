@@ -1,23 +1,31 @@
 ---
-title: SupportOps OpenEnv
+title: Servixa
 emoji: "📨"
 colorFrom: blue
 colorTo: green
 sdk: docker
 pinned: false
 license: mit
-short_description: Customer support automation evaluation environment for OpenEnv
+short_description: AI customer support automation evaluation environment
 ---
 
-# SupportOps OpenEnv
+# Servixa
 
-A FastAPI-based OpenEnv simulation for evaluating AI agents on realistic customer support triage, escalation, and resolution workflows.
+Servixa is a FastAPI-based OpenEnv simulation for evaluating AI agents on realistic customer support triage, escalation, and resolution workflows.
+
+## At a Glance
+
+- Domain: customer support automation
+- Interface: structured state, action, and observation models
+- Evaluation: deterministic grader plus shaped rewards
+- Deployment: FastAPI, Docker, Hugging Face Spaces
+- Outcome: a benchmark for whether an agent makes the right support decision under pressure
 
 ## Problem Statement
 
 Customer support is one of the most valuable and risky areas to automate. Real teams do not just answer questions. They must classify issues correctly, respect SLAs, escalate security and legal cases safely, choose the right customer communication, and avoid closing tickets that still require specialist review.
 
-Most agent demos skip these operational constraints. They show a model generating text, but not whether it made the right decision. SupportOps OpenEnv turns that gap into a structured evaluation problem.
+Most agent demos skip these operational constraints. They show a model generating text, but not whether it made the right decision. Servixa turns that gap into a structured evaluation problem.
 
 ## Why This Matters
 
@@ -31,7 +39,7 @@ Because the interface is structured and the grading is deterministic, the enviro
 
 ## What This Project Does
 
-SupportOps OpenEnv exposes a realistic support queue as an environment with:
+Servixa exposes a realistic support queue as an environment with:
 
 - structured ticket state
 - typed agent actions
@@ -55,6 +63,16 @@ An agent can reset into a task, inspect the queue, take actions ticket by ticket
 ## System Architecture
 
 The system has three core pieces:
+
+```mermaid
+flowchart LR
+    A["Agent Policy"] --> B["FastAPI API"]
+    B --> C["Servixa Environment"]
+    C --> D["Task Queue + Ticket State"]
+    C --> E["Shaped Reward"]
+    C --> F["Deterministic Grader"]
+    F --> G["Per-ticket Breakdown + Final Score"]
+```
 
 ### 1. Environment
 
