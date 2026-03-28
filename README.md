@@ -11,7 +11,7 @@ short_description: AI customer support automation evaluation environment
 
 # Servixa
 
-Servixa is a FastAPI-based OpenEnv simulation for evaluating AI agents on realistic customer support triage, escalation, and resolution workflows.
+Servixa is a FastAPI-based OpenEnv environment for evaluating AI agents on realistic customer support triage, escalation, and resolution workflows.
 
 ## At a Glance
 
@@ -19,23 +19,23 @@ Servixa is a FastAPI-based OpenEnv simulation for evaluating AI agents on realis
 - Interface: structured state, action, and observation models
 - Evaluation: deterministic grader plus shaped rewards
 - Deployment: FastAPI, Docker, Hugging Face Spaces
-- Outcome: a benchmark for whether an agent makes the right support decision under pressure
+- Outcome: a benchmark for whether an agent makes the right support decisions under pressure
 
 ## Problem Statement
 
-Customer support is one of the most valuable and risky areas to automate. Real teams do not just answer questions. They must classify issues correctly, respect SLAs, escalate security and legal cases safely, choose the right customer communication, and avoid closing tickets that still require specialist review.
+Customer support is one of the highest-value and highest-risk areas to automate. Real teams do more than answer questions. They must classify issues correctly, respect SLAs, escalate security and legal cases safely, choose the right customer communication, and avoid closing tickets that still need specialist review.
 
-Most agent demos skip these operational constraints. They show a model generating text, but not whether it made the right decision. Servixa turns that gap into a structured evaluation problem.
+Most agent demos skip these operational constraints. They show a model generating text, but not whether it made the right decision. Servixa turns that gap into a structured evaluation task.
 
 ## Why This Matters
 
-Structured environments are critical for evaluating AI agents because real-world automation is not judged by style alone. It is judged by outcomes, safety, and consistency. An agent that sounds helpful but routes a security incident incorrectly is not useful in production.
+Structured environments are essential for evaluating AI agents because real-world automation is not judged by style alone. It is judged by outcomes, safety, and consistency. An agent that sounds helpful but routes a security incident incorrectly is not useful in production.
 
-This project simulates the decisions support teams make every day: triage, prioritization, escalation, response selection, and closure. Those are sequential decisions with business consequences, which makes the environment useful for testing policies, LLM agents, and reinforcement learning approaches under repeatable conditions.
+This project simulates the decisions support teams make every day: triage, prioritization, escalation, response selection, and closure. These are sequential decisions with real business consequences, which makes the environment useful for testing policies, LLM agents, and reinforcement learning approaches under repeatable conditions.
 
-Customer support is a high-impact domain because it sits at the intersection of customer trust, operational cost, response speed, and compliance risk. A strong agent here can reduce handling time, improve service quality, and surface edge cases before deployment.
+Customer support is a high-impact domain because it sits at the intersection of customer trust, operating cost, response speed, and compliance risk. A strong agent in this setting can reduce handling time, improve service quality, and surface edge cases before deployment.
 
-Because the interface is structured and the grading is deterministic, the environment can extend beyond this hackathon use case into RL training loops, benchmark suites for LLM agents, enterprise workflow automation, and offline evaluation of decision policies.
+Because the interface is structured and the grading is deterministic, the environment can extend beyond this hackathon use case into RL training loops, benchmark suites for LLM agents, enterprise workflow automation, and offline policy evaluation.
 
 ## What This Project Does
 
@@ -47,7 +47,7 @@ Servixa exposes a realistic support queue as an environment with:
 - shaped rewards for incremental progress
 - HTTP endpoints compatible with OpenEnv-style evaluation loops
 
-An agent can reset into a task, inspect the queue, take actions ticket by ticket, and receive both immediate reward signals and final grader results.
+An agent can reset into a task, inspect the queue, act on tickets one by one, and receive both immediate reward signals and final grader results.
 
 ## Key Features
 
@@ -62,7 +62,7 @@ An agent can reset into a task, inspect the queue, take actions ticket by ticket
 
 ## System Architecture
 
-The system has three core pieces:
+The system has three main parts:
 
 ```mermaid
 flowchart LR
@@ -86,7 +86,7 @@ Agents interact through structured actions:
 - `respond`: choose a customer response template
 - `resolve`: record the resolution and decide whether to close the ticket
 
-Each `step` updates the state and returns a typed observation containing visible ticket views, queue summary, shaped reward, hints, and progress.
+Each `step` updates the state and returns a typed observation with visible ticket views, a queue summary, shaped reward details, hints, and progress.
 
 ### 3. Grader
 
@@ -99,11 +99,11 @@ The grader evaluates each ticket across six dimensions:
 - resolution
 - closure safety
 
-It then computes a final task score from `0.0` to `1.0`, including an efficiency penalty if the agent uses more steps than expected.
+It then computes a final task score from `0.0` to `1.0`, including an efficiency penalty if the agent takes more steps than expected.
 
 ## Task Design
 
-The environment is designed to show increasing operational difficulty:
+The tasks are designed to show increasing operational difficulty:
 
 ### Easy
 
@@ -129,7 +129,7 @@ Four tickets create realistic production pressure:
 - legal data request requiring specialist review
 - refund escalation that can be completed and closed
 
-This progression makes the environment useful both for quick smoke tests and for evaluating more advanced agent behavior under mixed-risk conditions.
+This progression makes the environment useful for both quick smoke tests and more advanced evaluations under mixed-risk conditions.
 
 ## Evaluation System
 
@@ -164,7 +164,7 @@ Each ticket is graded with the following weights:
 - resolution: `0.20`
 - closure: `0.10`
 
-The final task score is the average ticket score minus any efficiency penalty, capped to the `0.0-1.0` range.
+The final task score is the average ticket score minus any efficiency penalty, capped to the `0.0` to `1.0` range.
 
 ## API Usage
 
@@ -260,7 +260,7 @@ openenv validate
 
 ## Hugging Face Deployment
 
-The project is configured for Hugging Face Spaces with Docker/FastAPI deployment:
+The project is set up for Hugging Face Spaces using Docker and FastAPI:
 
 - `openenv.yaml` declares the OpenEnv-compatible app entrypoint
 - `Dockerfile` launches `uvicorn server.app:app`
@@ -270,7 +270,7 @@ This makes the environment easy to host as a live evaluation endpoint for judges
 
 ## Baseline Agent Performance
 
-The included baseline is a deterministic support policy that handles all tasks strongly and intentionally leaves a little room for improvement.
+The included baseline is a deterministic support policy that performs strongly across all tasks while still leaving a little room for improvement.
 
 Measured results from `python baseline.py`:
 
@@ -279,11 +279,11 @@ Measured results from `python baseline.py`:
 - Hard: `0.9625`
 - Average: `0.9708`
 
-Key insight:
+Key takeaways:
 
 - The baseline solves the easy queue perfectly.
-- It stays strong on medium and hard tasks while missing a small number of policy details.
-- That makes it a useful reference policy for evaluation because it is clearly competent without looking artificially perfect.
+- It remains strong on medium and hard tasks while missing a small number of policy details.
+- That makes it a useful reference policy because it is clearly capable without looking artificially perfect.
 
 ## Project Structure
 
@@ -314,19 +314,19 @@ Key insight:
 
 Here is a short 60-90 second presentation script:
 
-> SupportOps OpenEnv is a structured customer support automation environment built for evaluating AI agents, not just showcasing them. Instead of asking whether a model can write a plausible reply, we ask whether it can make the right operational decision under real support constraints.
+> Servixa is a structured customer support automation environment built to evaluate AI agents, not just showcase them. Instead of asking whether a model can write a plausible reply, we ask whether it can make the right operational decision under real support constraints.
 >
-> Each task gives the agent a queue of realistic tickets. Some are simple, like a password reset. Others involve billing disputes, abuse reports, VIP outages, legal requests, or potential account compromise. The agent has to classify the issue, assign the right priority, route it to the correct team, choose an appropriate response template, and decide whether the ticket can be safely closed.
+> Each task gives the agent a queue of realistic tickets. Some are simple, like a password reset. Others involve billing disputes, abuse reports, VIP outages, legal requests, or possible account compromise. The agent has to classify the issue, assign the right priority, route it to the correct team, choose the right response template, and decide whether the ticket can be safely closed.
 >
 > The interaction loop is simple: call `/reset` to start a task, use `/step` to take structured actions, and inspect progress through `/state`. Behind the scenes, the environment tracks every decision and the grader scores the result deterministically.
 >
-> What makes this interesting is that it captures the real tradeoffs of automation: speed, safety, escalation quality, and resolution accuracy. The included baseline scores `1.00` on easy, `0.95` on medium, and `0.9625` on hard, which shows the environment is both solvable and meaningfully discriminative.
+> What makes this interesting is that it captures the real tradeoffs of automation: speed, safety, escalation quality, and resolution accuracy. The included baseline scores `1.00` on easy, `0.95` on medium, and `0.9625` on hard, which shows the environment is both solvable and meaningfully differentiating.
 >
 > This stands out because it turns customer support automation into a measurable benchmark. It is easy to run, easy to evaluate, and directly relevant to real-world AI deployment.
 
 ## Optional Improvements
 
-Three fast upgrades that would make the submission even stronger:
+Three quick upgrades that would make the submission even stronger:
 
 1. Add a simple architecture diagram showing `Agent -> API -> Environment -> Grader` for instant judge comprehension.
 2. Record a short terminal demo or GIF of `/reset`, `/step`, and `/grader` in action so the workflow is visible in under 20 seconds.

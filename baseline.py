@@ -27,7 +27,7 @@ def _optional_openai_brief(task_summary: Dict[str, object]) -> Optional[str]:
         response = client.responses.create(
             model=MODEL_NAME,
             input=(
-                "Return one short sentence summarizing the support-triage intent for this task.\n\n"
+                "Return one short sentence that summarizes the support triage goal for this task.\n\n"
                 f"Task: {json.dumps(task_summary, ensure_ascii=True)}"
             ),
             max_output_tokens=40,
@@ -98,8 +98,8 @@ def _resolution_policy(ticket: Dict[str, Any]) -> Dict[str, Any]:
 
 def _baseline_adjustments(task_id: str, ticket: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Apply a couple of realistic heuristic misses so the baseline remains strong
-    without looking oracle-perfect.
+    Add a couple of realistic heuristic misses so the baseline stays strong
+    without looking perfectly scripted.
     """
     adjustments: Dict[str, Any] = {}
 

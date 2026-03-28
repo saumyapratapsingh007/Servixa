@@ -70,9 +70,9 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
             )
             reward = SupportReward(
                 score=0.0,
-                rationale="Environment reset. Ready for ticket operations.",
+                rationale="Environment reset. Ready to handle tickets.",
             )
-            return self._build_observation(reward=reward, last_event="Queue initialized.", done=False)
+            return self._build_observation(reward=reward, last_event="Queue ready.", done=False)
 
     def step(
         self,
@@ -86,11 +86,11 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
                 reward = SupportReward(
                     score=-0.05,
                     components={"late_action_penalty": -0.05},
-                    rationale="Episode already ended. Reset before sending more actions.",
+                    rationale="This episode has already ended. Reset before sending more actions.",
                 )
                 return self._build_observation(
                     reward=reward,
-                    last_event="Action rejected because the episode is complete.",
+                    last_event="Action rejected because the episode is already complete.",
                     done=True,
                 )
 
@@ -100,23 +100,23 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
             if ticket is None:
                 reward.score = -0.20
                 reward.components["invalid_ticket_penalty"] = -0.20
-                reward.rationale = "Action referenced an unknown ticket."
+                reward.rationale = "The action referenced an unknown ticket."
                 self._state.total_reward += reward.score
                 self._state.action_history.append({"action": action.model_dump(), "valid": False})
                 self._refresh_progress()
-                return self._finalize_step(reward=reward, last_event=f"Ticket {action.ticket_id} does not exist.")
+                return self._finalize_step(reward=reward, last_event=f"Ticket {action.ticket_id} was not found.")
 
             missing_field = self._missing_required_field(action)
             if missing_field is not None:
                 reward.score = -0.12
                 reward.components["invalid_action_penalty"] = -0.12
-                reward.rationale = f"{action.action_type} actions require `{missing_field}`."
+                reward.rationale = f"A {action.action_type} action requires `{missing_field}`."
                 self._record_ticket_action(ticket, action, valid=False)
                 self._state.total_reward += reward.score
                 self._refresh_progress()
                 return self._finalize_step(
                     reward=reward,
-                    last_event=f"Action rejected for ticket {ticket.ticket_id}: missing {missing_field}.",
+                    last_event=f"Action rejected for ticket {ticket.ticket_id}: `{missing_field}` is missing.",
                 )
 
             if action.action_type == "classify":
@@ -129,7 +129,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
             reward.components["efficiency_penalty"] = reward.components.get("efficiency_penalty", 0.0) - 0.01
             reward.score = round(sum(reward.components.values()), 4)
             if not reward.rationale:
-                reward.rationale = "Ticket updated."
+                reward.rationale = "Ticket updated successfully."
 
             self._record_ticket_action(ticket, action, valid=True)
             self._state.total_reward = round(self._state.total_reward + reward.score, 4)
@@ -137,7 +137,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
             self._update_done_flags()
             return self._finalize_step(
                 reward=reward,
-                last_event=f"{action.action_type.title()} applied to ticket {ticket.ticket_id}.",
+                last_event=f"{action.action_type.title()} action applied to ticket {ticket.ticket_id}.",
             )
 
     @property
@@ -147,7 +147,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
     def get_metadata(self) -> EnvironmentMetadata:
         return EnvironmentMetadata(
             name="SupportOps OpenEnv",
-            description="Customer-support triage environment with deterministic grading and shaped rewards.",
+            description="Customer support triage environment with deterministic grading and shaped rewards.",
             version="1.0.0",
             author="OpenEnv Hackathon Build",
         )
@@ -174,7 +174,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
         reward.components["routing"] = 0.10 if action.route_to == ticket.expected_route else -0.06
         if action.route_to == "frontline" and ticket.expected_route in {"security", "trust_safety", "tech_ops"}:
             reward.components["specialist_miss_penalty"] = -0.08
-            reward.rationale = "Frontline retained a ticket that requires specialist ownership."
+            reward.rationale = "The frontline queue kept a ticket that should be owned by a specialist team."
 
     def _apply_response(self, ticket: TicketState, action: SupportAction, reward: SupportReward) -> None:
         ticket.last_response_template = action.template_key
@@ -184,7 +184,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
         reward.components["response_template"] = 0.08 if action.template_key == ticket.expected_template else -0.05
         if action.template_key not in ticket.allowed_templates:
             reward.components["template_policy_penalty"] = -0.09
-            reward.rationale = "Selected response template is not available for this ticket."
+            reward.rationale = "The selected response template is not available for this ticket."
 
     def _apply_resolution(self, ticket: TicketState, action: SupportAction, reward: SupportReward) -> None:
         ticket.resolution = action.resolution
@@ -200,7 +200,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
             )
             if not correctly_escalated:
                 reward.components["unsafe_closure_penalty"] = -0.25
-                reward.rationale = "Unsafe closure: this ticket requires specialist follow-up."
+                reward.rationale = "Unsafe closure: this ticket still requires specialist follow-up."
 
     def _record_ticket_action(self, ticket: TicketState, action: SupportAction, valid: bool) -> None:
         payload = action.model_dump()

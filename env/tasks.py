@@ -10,13 +10,13 @@ TASKS: List[Dict[str, object]] = [
         "title": "Retail Inbox Starter Queue",
         "objective": (
             "Triage two standard support tickets. Correctly classify each issue, "
-            "set a sensible priority, send the best response template, and close only "
+            "set the right priority, send the best response template, and close only "
             "the ticket that can be fully resolved by support."
         ),
         "max_steps": 7,
         "guidance": [
             "Security issues must never be closed without routing to the security queue.",
-            "Shipping complaints waiting on a carrier should stay open and routed to logistics.",
+            "Shipping complaints waiting on a carrier should stay open and be routed to logistics.",
             "Choose one of the visible response templates for every handled ticket.",
         ],
         "tickets": [
@@ -91,7 +91,7 @@ TASKS: List[Dict[str, object]] = [
         ),
         "max_steps": 10,
         "guidance": [
-            "Duplicate charges belong with billing, not frontline support.",
+            "Duplicate charges belong with billing, not the frontline queue.",
             "Trust and safety complaints require elevated priority when abuse is ongoing.",
             "Partial progress matters, but closing the wrong ticket is penalized.",
         ],
@@ -198,7 +198,7 @@ TASKS: List[Dict[str, object]] = [
         "max_steps": 13,
         "guidance": [
             "Possible account compromise must be routed to security with urgent priority.",
-            "Legal requests are not closed by support and belong with trust_safety.",
+            "Legal requests should not be closed by support and belong with trust_safety.",
             "VIP operational outages should be acknowledged quickly and routed to tech_ops.",
             "Efficiency matters: unnecessary steps reduce reward even if the final grader is high.",
         ],

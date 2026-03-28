@@ -33,7 +33,7 @@ class SchemaPayload(BaseModel):
 app = FastAPI(
     title="SupportOps OpenEnv API",
     version="1.0.0",
-    description="Deterministic customer-support triage environment implementing the OpenEnv HTTP contract.",
+    description="A deterministic customer support triage environment that implements the OpenEnv HTTP contract.",
 )
 
 
@@ -100,7 +100,7 @@ def mcp(body: Dict[str, Any]) -> Dict[str, Any]:
         result = {
             "server": "supportops_env",
             "status": "ok",
-            "note": "Minimal MCP compatibility endpoint for OpenEnv validation.",
+            "note": "Basic MCP compatibility endpoint for OpenEnv validation.",
         }
     return {"jsonrpc": "2.0", "id": request_id, "result": result}
 
