@@ -48,62 +48,262 @@ def root() -> str:
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Servixa</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 32px;
-            background: #f6f9fc;
-            color: #1f2937;
+          :root { --bg:#07111f; --bg2:#0d1830; --panel:rgba(10,19,33,.76); --line:rgba(148,163,184,.16); --text:#e5eefc; --muted:#9db0cc; --cyan:#67e8f9; --violet:#8b5cf6; --green:#34d399; --shadow:0 24px 60px rgba(2,8,23,.45); --r:24px; --t:260ms ease; }
+          * { box-sizing:border-box; }
+          html { scroll-behavior:smooth; }
+          body { margin:0; color:var(--text); font-family:"Segoe UI",Arial,sans-serif; background:radial-gradient(circle at top left, rgba(103,232,249,.14), transparent 34%), radial-gradient(circle at top right, rgba(139,92,246,.16), transparent 28%), linear-gradient(160deg,#04101d 0%,#081321 42%,#0d1830 100%); overflow-x:hidden; }
+          body::before, body::after { content:""; position:fixed; width:24rem; height:24rem; border-radius:50%; filter:blur(90px); opacity:.34; z-index:0; pointer-events:none; animation:floatGlow 14s ease-in-out infinite; }
+          body::before { top:-10rem; right:-8rem; background:rgba(103,232,249,.26); }
+          body::after { left:-8rem; bottom:-12rem; background:rgba(139,92,246,.22); animation-delay:-4s; }
+          a { color:inherit; text-decoration:none; }
+          button { font:inherit; }
+          .page { position:relative; z-index:1; width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:20px 0 56px; }
+          .nav, .panel { background:var(--panel); border:1px solid var(--line); box-shadow:var(--shadow); backdrop-filter:blur(20px); }
+          .nav { position:sticky; top:18px; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; margin-bottom:28px; border-radius:999px; }
+          .brand { display:flex; align-items:center; gap:12px; }
+          .brand-mark { width:44px; height:44px; display:grid; place-items:center; border-radius:14px; color:var(--cyan); font-weight:800; background:linear-gradient(135deg, rgba(103,232,249,.22), rgba(139,92,246,.28)); border:1px solid rgba(103,232,249,.24); box-shadow:0 0 24px rgba(103,232,249,.2); }
+          .brand strong { display:block; letter-spacing:.04em; }
+          .brand span { display:block; color:var(--muted); font-size:.82rem; }
+          .nav-links { display:flex; align-items:center; gap:10px; }
+          .nav-group { position:relative; }
+          .nav-link, .nav-trigger { display:inline-flex; align-items:center; gap:8px; padding:12px 16px; border-radius:999px; background:transparent; border:1px solid transparent; color:#dbe7fb; cursor:pointer; transition:background var(--t), border-color var(--t), transform var(--t), box-shadow var(--t); }
+          .nav-trigger::after { content:"v"; font-size:.7rem; color:var(--muted); }
+          .nav-link:hover, .nav-link:focus-visible, .nav-trigger:hover, .nav-trigger:focus-visible, .nav-group:hover>.nav-trigger, .nav-group:focus-within>.nav-trigger { background:rgba(148,163,184,.08); border-color:rgba(103,232,249,.18); transform:translateY(-1px); box-shadow:0 10px 25px rgba(2,8,23,.22); outline:none; }
+          .dropdown { position:absolute; top:calc(100% + 12px); left:0; width:290px; padding:10px; border-radius:20px; background:rgba(8,15,28,.92); border:1px solid rgba(103,232,249,.14); box-shadow:var(--shadow); opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity var(--t), transform var(--t), visibility var(--t); }
+          .nav-group:hover .dropdown, .nav-group:focus-within .dropdown, .nav-group.is-open .dropdown { opacity:1; visibility:visible; transform:translateY(0); }
+          .dropdown a { display:block; padding:12px 14px; border-radius:16px; transition:background var(--t), transform var(--t); }
+          .dropdown a:hover, .dropdown a:focus-visible { background:rgba(103,232,249,.09); transform:translateX(3px); outline:none; }
+          .dropdown strong { display:block; margin-bottom:4px; font-size:.95rem; }
+          .dropdown span { display:block; color:var(--muted); font-size:.84rem; line-height:1.45; }
+          .menu-button { display:none; width:46px; height:46px; align-items:center; justify-content:center; border:1px solid rgba(103,232,249,.18); border-radius:16px; background:rgba(148,163,184,.08); color:var(--text); cursor:pointer; }
+          .hero { display:grid; grid-template-columns:minmax(0,1.18fr) minmax(320px,.82fr); gap:24px; margin-bottom:24px; }
+          .panel { position:relative; overflow:hidden; border-radius:var(--r); }
+          .panel::before { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(120deg, rgba(103,232,249,.08), transparent 34%, rgba(139,92,246,.08)); }
+          .hero-copy, .hero-side, .card, .task, .stack { position:relative; padding:28px; }
+          .eyebrow, .label, .task-badge { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; border:1px solid rgba(103,232,249,.14); background:rgba(103,232,249,.08); color:#c9fbff; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; }
+          .hero h1 { margin:16px 0 14px; font-size:clamp(2.7rem, 6vw, 4.9rem); line-height:.96; letter-spacing:-.05em; }
+          .hero h1 span { color:var(--cyan); text-shadow:0 0 26px rgba(103,232,249,.34); }
+          .hero p, .muted { margin:0; color:#cfdcf1; line-height:1.7; }
+          .muted { color:var(--muted); }
+          .cta-row { display:flex; flex-wrap:wrap; gap:14px; margin:24px 0; }
+          .button { display:inline-flex; align-items:center; justify-content:center; min-height:50px; padding:0 22px; border-radius:16px; border:1px solid transparent; transition:transform var(--t), box-shadow var(--t), border-color var(--t), background var(--t); }
+          .button:hover, .button:focus-visible { transform:translateY(-2px) scale(1.01); outline:none; }
+          .button-primary { background:linear-gradient(135deg, rgba(103,232,249,.95), rgba(59,130,246,.86)); color:#04101d; font-weight:700; box-shadow:0 18px 36px rgba(37,99,235,.28); }
+          .button-secondary { background:rgba(148,163,184,.06); border-color:rgba(148,163,184,.18); }
+          .metrics, .cards, .tasks { display:grid; gap:16px; }
+          .metrics { grid-template-columns:repeat(3, minmax(0,1fr)); }
+          .metric, .card, .task, .stack { background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.12); border-radius:20px; transition:transform var(--t), border-color var(--t), box-shadow var(--t), background var(--t); }
+          .metric { padding:16px 18px; }
+          .metric:hover, .card:hover, .task:hover, .stack:hover { transform:translateY(-6px); border-color:rgba(103,232,249,.22); box-shadow:0 24px 48px rgba(2,8,23,.32); }
+          .metric strong { display:block; margin-bottom:8px; font-size:1.45rem; }
+          .metric span { color:var(--muted); font-size:.9rem; }
+          .hero-side { display:grid; gap:16px; }
+          .orbit { position:relative; width:min(100%,270px); aspect-ratio:1; margin:8px auto 18px; border-radius:50%; border:1px solid rgba(103,232,249,.2); background:radial-gradient(circle at center, rgba(103,232,249,.16), transparent 36%), radial-gradient(circle at 30% 30%, rgba(139,92,246,.12), transparent 24%); }
+          .orbit::before, .orbit::after { content:""; position:absolute; border-radius:50%; border:1px dashed rgba(148,163,184,.16); }
+          .orbit::before { inset:18%; } .orbit::after { inset:34%; }
+          .core, .node { position:absolute; display:grid; place-items:center; border-radius:50%; text-align:center; }
+          .core { inset:50%; width:88px; height:88px; transform:translate(-50%,-50%); background:linear-gradient(135deg, rgba(103,232,249,.95), rgba(139,92,246,.88)); color:#06111e; font-weight:800; box-shadow:0 0 34px rgba(103,232,249,.34); }
+          .node { width:74px; height:74px; padding:12px; background:rgba(11,23,39,.92); border:1px solid rgba(103,232,249,.18); color:#dff9ff; font-size:.8rem; line-height:1.25; box-shadow:0 14px 24px rgba(2,8,23,.26); }
+          .n1 { top:8%; left:50%; transform:translateX(-50%); } .n2 { right:6%; top:50%; transform:translateY(-50%); } .n3 { bottom:8%; left:50%; transform:translateX(-50%); } .n4 { left:6%; top:50%; transform:translateY(-50%); }
+          .flow { display:grid; gap:14px; margin-top:14px; }
+          .flow-item { display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+          .flow-step { width:34px; height:34px; display:grid; place-items:center; border-radius:12px; color:var(--cyan); background:rgba(103,232,249,.12); border:1px solid rgba(103,232,249,.2); font-weight:700; }
+          .grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:20px; margin-bottom:20px; }
+          .span-4 { grid-column:span 4; } .span-8 { grid-column:span 8; } .span-12 { grid-column:span 12; }
+          h2, h3 { margin:0 0 10px; letter-spacing:-.03em; }
+          .tasks { grid-template-columns:repeat(3, minmax(0,1fr)); margin-top:20px; }
+          .task { position:relative; overflow:hidden; }
+          .task::after { content:""; position:absolute; inset:auto 24px 0; height:3px; border-radius:999px; background:linear-gradient(90deg, rgba(103,232,249,.95), rgba(139,92,246,.9)); }
+          .easy { background:rgba(52,211,153,.12); color:#7ef0c3; }
+          .medium { background:rgba(251,191,36,.12); color:#ffd970; }
+          .hard { background:rgba(244,114,182,.12); color:#ff9dcf; }
+          .endpoint-list { display:grid; gap:12px; margin-top:18px; }
+          .endpoint { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 16px; border-radius:18px; background:rgba(148,163,184,.05); border:1px solid rgba(148,163,184,.12); transition:transform var(--t), border-color var(--t), background var(--t); }
+          .endpoint:hover { transform:translateX(4px); border-color:rgba(103,232,249,.2); background:rgba(103,232,249,.06); }
+          .endpoint code { display:inline-flex; min-width:110px; justify-content:center; padding:10px 14px; border-radius:14px; background:rgba(8,15,28,.82); border:1px solid rgba(103,232,249,.12); color:#caf5ff; }
+          .endpoint small { display:block; color:var(--muted); margin-top:4px; }
+          .footer { padding:24px 28px; text-align:center; color:var(--muted); }
+          .reveal { opacity:0; transform:translateY(28px); animation:riseIn 780ms ease forwards; }
+          .d1 { animation-delay:.08s; } .d2 { animation-delay:.16s; } .d3 { animation-delay:.24s; } .d4 { animation-delay:.32s; }
+          @keyframes riseIn { to { opacity:1; transform:translateY(0); } }
+          @keyframes floatGlow { 0%,100% { transform:translate3d(0,0,0) scale(1); } 50% { transform:translate3d(0,18px,0) scale(1.04); } }
+          @media (max-width:1024px) { .hero, .tasks, .metrics { grid-template-columns:1fr; } .span-4, .span-8 { grid-column:span 12; } }
+          @media (max-width:860px) {
+            .page { width:min(100% - 22px, 1180px); } .nav { flex-wrap:wrap; border-radius:28px; } .menu-button { display:inline-flex; }
+            .nav-links { display:none; width:100%; flex-direction:column; align-items:stretch; padding-top:10px; } .nav-links.open { display:flex; }
+            .nav-group, .nav-link, .nav-trigger, .dropdown { width:100%; } .dropdown { position:static; margin-top:8px; display:none; opacity:1; visibility:visible; transform:none; }
+            .nav-group.is-open .dropdown { display:block; } .hero-copy, .hero-side, .card, .task, .stack { padding:22px; }
           }
-          .card {
-            max-width: 760px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            padding: 32px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-          }
-          h1 {
-            margin-top: 0;
-          }
-          code {
-            background: #eef2ff;
-            padding: 2px 6px;
-            border-radius: 6px;
-          }
-          ul {
-            line-height: 1.7;
-          }
-          a {
-            color: #2563eb;
-            text-decoration: none;
-          }
-          a:hover {
-            text-decoration: underline;
-          }
+          @media (max-width:640px) { .page { padding-top:14px; } .hero h1 { font-size:2.55rem; } .cta-row { flex-direction:column; } .button { width:100%; } .endpoint { flex-direction:column; align-items:flex-start; } }
         </style>
       </head>
       <body>
-        <div class="card">
-          <h1>Servixa</h1>
-          <p>
-            Servixa is a structured customer support automation environment for evaluating
-            agent decisions around triage, routing, escalation, response selection, and ticket closure.
-          </p>
-          <p>Useful endpoints:</p>
-          <ul>
-            <li><a href="/docs"><code>/docs</code></a> - interactive API docs</li>
-            <li><a href="/health"><code>/health</code></a> - health check</li>
-            <li><a href="/tasks"><code>/tasks</code></a> - available tasks</li>
-            <li><a href="/baseline"><code>/baseline</code></a> - baseline performance</li>
-            <li><a href="/grader"><code>/grader</code></a> - current grader report</li>
-            <li><a href="/metadata"><code>/metadata</code></a> - environment metadata</li>
-            <li><a href="/schema"><code>/schema</code></a> - action, observation, and state schemas</li>
-          </ul>
-          <p>
-            Typical agent flow: <code>POST /reset</code> -> <code>POST /step</code> -> <code>GET /state</code>.
-          </p>
+        <div class="page">
+          <nav class="nav reveal" aria-label="Main navigation">
+            <div class="brand">
+              <div class="brand-mark">S</div>
+              <div><strong>Servixa</strong><span>Support automation evaluation environment</span></div>
+            </div>
+            <button class="menu-button" id="menu-button" aria-expanded="false" aria-controls="nav-links" aria-label="Toggle navigation">Menu</button>
+            <div class="nav-links" id="nav-links">
+              <div class="nav-group">
+                <button class="nav-trigger" type="button" aria-expanded="false">Platform</button>
+                <div class="dropdown" role="menu">
+                  <a href="#overview" role="menuitem"><strong>Overview</strong><span>See what Servixa measures and why the environment matters.</span></a>
+                  <a href="#tasks" role="menuitem"><strong>Task Design</strong><span>Explore the easy, medium, and hard support scenarios.</span></a>
+                </div>
+              </div>
+              <div class="nav-group">
+                <button class="nav-trigger" type="button" aria-expanded="false">API</button>
+                <div class="dropdown" role="menu">
+                  <a href="/docs" role="menuitem"><strong>Interactive Docs</strong><span>Browse and test every endpoint from Swagger UI.</span></a>
+                  <a href="#endpoints" role="menuitem"><strong>Endpoint Guide</strong><span>Jump to the routes most useful for demos and judges.</span></a>
+                </div>
+              </div>
+              <div class="nav-group">
+                <button class="nav-trigger" type="button" aria-expanded="false">Evaluation</button>
+                <div class="dropdown" role="menu">
+                  <a href="/baseline" role="menuitem"><strong>Baseline Results</strong><span>Review benchmark scores from the reference policy.</span></a>
+                  <a href="/grader" role="menuitem"><strong>Grader Output</strong><span>Inspect the current per-ticket scoring report.</span></a>
+                </div>
+              </div>
+              <a class="nav-link" href="/health">Health</a>
+            </div>
+          </nav>
+
+          <section class="hero">
+            <div class="panel hero-copy reveal d1" id="overview">
+              <div class="eyebrow">OpenEnv-compatible simulation</div>
+              <h1>Evaluate support agents with <span>speed</span> and clarity.</h1>
+              <p>Servixa turns customer support triage into a structured environment where agents must classify issues, route them safely, choose the right response, and close tickets only when the outcome is truly correct.</p>
+              <div class="cta-row">
+                <a class="button button-primary" href="/docs">Open API Docs</a>
+                <a class="button button-secondary" href="/baseline">View Baseline Scores</a>
+              </div>
+              <div class="metrics">
+                <div class="metric"><strong>3</strong><span>Difficulty tiers across realistic support workflows</span></div>
+                <div class="metric"><strong>0.9708</strong><span>Average baseline score across the benchmark suite</span></div>
+                <div class="metric"><strong>HTTP</strong><span>Simple reset-step-state loop for fast agent integration</span></div>
+              </div>
+            </div>
+
+            <div class="panel hero-side reveal d2" aria-label="Architecture preview">
+              <div class="stack">
+                <div class="label">System Map</div>
+                <div class="orbit">
+                  <div class="core">Serve</div>
+                  <div class="node n1">Agent</div>
+                  <div class="node n2">Grader</div>
+                  <div class="node n3">Tasks</div>
+                  <div class="node n4">API</div>
+                </div>
+                <p class="muted">A compact evaluation loop designed for triage, escalation, response selection, and resolution quality.</p>
+              </div>
+              <div class="stack">
+                <div class="label">Interaction Loop</div>
+                <div class="flow">
+                  <div class="flow-item"><div class="flow-step">1</div><div><strong>Reset a task</strong><div class="muted">Start a scenario with realistic tickets, guidance, and a step budget.</div></div></div>
+                  <div class="flow-item"><div class="flow-step">2</div><div><strong>Take structured steps</strong><div class="muted">Classify, respond, and resolve while preserving safe escalation paths.</div></div></div>
+                  <div class="flow-item"><div class="flow-step">3</div><div><strong>Measure outcomes</strong><div class="muted">Use shaped rewards and deterministic grading to benchmark quality.</div></div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid">
+            <article class="panel card span-4 reveal d2"><div class="label">Structured</div><h2>Typed environment surfaces</h2><p class="muted">Actions, observations, and state are modeled clearly so agents can integrate without guessing the contract.</p></article>
+            <article class="panel card span-4 reveal d3"><div class="label">Deterministic</div><h2>Reliable evaluation</h2><p class="muted">Every ticket is scored across category, priority, route, response template, resolution, and closure safety.</p></article>
+            <article class="panel card span-4 reveal d4"><div class="label">Deployment-ready</div><h2>Simple to run anywhere</h2><p class="muted">FastAPI, Docker, and Hugging Face Spaces make the environment easy to test, host, and judge quickly.</p></article>
+          </section>
+
+          <section class="grid" id="tasks">
+            <article class="panel stack span-12 reveal d1">
+              <div class="label">Scenario Design</div>
+              <h2>Built to reflect real support pressure</h2>
+              <p class="muted">The benchmark mixes standard service requests with high-risk tickets such as abuse reports, legal requests, VIP outages, and possible account compromise.</p>
+              <div class="tasks">
+                <div class="task"><div class="task-badge easy">Easy</div><h3>Starter queue</h3><p class="muted">Password reset and shipping delay scenarios test clean triage, routing, and safe closure decisions.</p></div>
+                <div class="task"><div class="task-badge medium">Medium</div><h3>Policy nuance</h3><p class="muted">Refunds, duplicate charges, and abuse reports add specialist routing and higher-stakes prioritization.</p></div>
+                <div class="task"><div class="task-badge hard">Hard</div><h3>Operational pressure</h3><p class="muted">Security, VIP incidents, legal review, and refund escalations stress-test judgment under mixed risk.</p></div>
+              </div>
+            </article>
+          </section>
+
+          <section class="grid" id="endpoints">
+            <article class="panel stack span-8 reveal d2">
+              <div class="label">Core Endpoints</div>
+              <h2>Everything needed to run the loop</h2>
+              <p class="muted">Use the environment over standard HTTP with a clear reset, step, inspect, and grade workflow.</p>
+              <div class="endpoint-list">
+                <a class="endpoint" href="/docs"><div><strong>Interactive docs</strong><small>Browse all routes and test requests from the browser.</small></div><code>/docs</code></a>
+                <a class="endpoint" href="/tasks"><div><strong>Task list</strong><small>See available scenarios, difficulty, and ticket counts.</small></div><code>/tasks</code></a>
+                <a class="endpoint" href="/schema"><div><strong>Schema</strong><small>Inspect the action, observation, and state models.</small></div><code>/schema</code></a>
+                <a class="endpoint" href="/baseline"><div><strong>Baseline performance</strong><small>Review benchmark results from the included reference policy.</small></div><code>/baseline</code></a>
+              </div>
+            </article>
+            <article class="panel stack span-4 reveal d3">
+              <div class="label">Quick Start</div>
+              <h2>Evaluation flow</h2>
+              <p class="muted">A typical agent interaction looks like this:</p>
+              <div class="endpoint-list">
+                <div class="endpoint"><div><strong>Start a task</strong><small>Initialize the queue and receive the first observation.</small></div><code>POST /reset</code></div>
+                <div class="endpoint"><div><strong>Act on tickets</strong><small>Submit classify, respond, or resolve actions.</small></div><code>POST /step</code></div>
+                <div class="endpoint"><div><strong>Inspect progress</strong><small>Check current state, rewards, and final grader output.</small></div><code>GET /state</code></div>
+              </div>
+            </article>
+          </section>
+
+          <footer class="panel footer reveal d4">Servixa is built for customer support agent benchmarking, with deterministic grading and lightweight deployment.</footer>
         </div>
+        <script>
+          const menuButton = document.getElementById("menu-button");
+          const navLinks = document.getElementById("nav-links");
+          const navGroups = Array.from(document.querySelectorAll(".nav-group"));
+          if (menuButton && navLinks) {
+            menuButton.addEventListener("click", () => {
+              const expanded = menuButton.getAttribute("aria-expanded") === "true";
+              menuButton.setAttribute("aria-expanded", String(!expanded));
+              navLinks.classList.toggle("open");
+            });
+          }
+          navGroups.forEach((group) => {
+            const trigger = group.querySelector(".nav-trigger");
+            if (!trigger) { return; }
+            trigger.addEventListener("click", () => {
+              if (!window.matchMedia("(max-width: 860px)").matches) { return; }
+              const isOpen = group.classList.contains("is-open");
+              navGroups.forEach((item) => {
+                item.classList.remove("is-open");
+                const button = item.querySelector(".nav-trigger");
+                if (button) { button.setAttribute("aria-expanded", "false"); }
+              });
+              if (!isOpen) {
+                group.classList.add("is-open");
+                trigger.setAttribute("aria-expanded", "true");
+              }
+            });
+          });
+          document.addEventListener("click", (event) => {
+            if (!event.target.closest(".nav")) {
+              navGroups.forEach((group) => {
+                group.classList.remove("is-open");
+                const trigger = group.querySelector(".nav-trigger");
+                if (trigger) { trigger.setAttribute("aria-expanded", "false"); }
+              });
+            }
+          });
+          window.addEventListener("resize", () => {
+            if (!window.matchMedia("(max-width: 860px)").matches && navLinks) {
+              navLinks.classList.remove("open");
+              menuButton?.setAttribute("aria-expanded", "false");
+              navGroups.forEach((group) => {
+                group.classList.remove("is-open");
+                const trigger = group.querySelector(".nav-trigger");
+                if (trigger) { trigger.setAttribute("aria-expanded", "false"); }
+              });
+            }
+          });
+        </script>
       </body>
     </html>
     """
