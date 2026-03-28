@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from baseline import run_baseline
@@ -35,6 +36,77 @@ app = FastAPI(
     version="1.0.0",
     description="A deterministic customer support triage environment that implements the OpenEnv HTTP contract.",
 )
+
+
+@app.get("/", response_class=HTMLResponse)
+def root() -> str:
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Servixa</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 32px;
+            background: #f6f9fc;
+            color: #1f2937;
+          }
+          .card {
+            max-width: 760px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+          }
+          h1 {
+            margin-top: 0;
+          }
+          code {
+            background: #eef2ff;
+            padding: 2px 6px;
+            border-radius: 6px;
+          }
+          ul {
+            line-height: 1.7;
+          }
+          a {
+            color: #2563eb;
+            text-decoration: none;
+          }
+          a:hover {
+            text-decoration: underline;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>Servixa</h1>
+          <p>
+            Servixa is a structured customer support automation environment for evaluating
+            agent decisions around triage, routing, escalation, response selection, and ticket closure.
+          </p>
+          <p>Useful endpoints:</p>
+          <ul>
+            <li><a href="/docs"><code>/docs</code></a> - interactive API docs</li>
+            <li><a href="/health"><code>/health</code></a> - health check</li>
+            <li><a href="/tasks"><code>/tasks</code></a> - available tasks</li>
+            <li><a href="/baseline"><code>/baseline</code></a> - baseline performance</li>
+            <li><a href="/grader"><code>/grader</code></a> - current grader report</li>
+            <li><a href="/metadata"><code>/metadata</code></a> - environment metadata</li>
+            <li><a href="/schema"><code>/schema</code></a> - action, observation, and state schemas</li>
+          </ul>
+          <p>
+            Typical agent flow: <code>POST /reset</code> -> <code>POST /step</code> -> <code>GET /state</code>.
+          </p>
+        </div>
+      </body>
+    </html>
+    """
 
 
 @app.get("/health", response_model=HealthResponse)
