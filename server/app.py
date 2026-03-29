@@ -63,7 +63,7 @@ def root() -> str:
             radial-gradient(circle at var(--cursor-x, 50%) var(--cursor-y, 24%), rgba(255,244,232,.22) 0%, rgba(255,236,214,.12) 10%, rgba(103,232,249,.12) 20%, transparent 42%);
             opacity:.9;
             transition:background-position 80ms linear; }
-          .cursor-shell, .cursor-core { position:fixed; left:0; top:0; pointer-events:none; z-index:60; border-radius:999px; transform:translate3d(-50%, -50%, 0); transition:width 160ms ease, height 160ms ease, opacity 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 80ms linear; }
+          .cursor-shell, .cursor-core { position:fixed; left:0; top:0; pointer-events:none; z-index:60; border-radius:999px; transform:translate3d(-50%, -50%, 0); transition:width 160ms ease, height 160ms ease, opacity 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; will-change:transform,width,height,opacity; }
           .cursor-shell { width:34px; height:34px; border:1px solid rgba(255,244,232,.45); background:radial-gradient(circle, rgba(255,255,255,.06), rgba(103,232,249,.04)); box-shadow:0 0 0 1px rgba(103,232,249,.08), 0 0 24px rgba(103,232,249,.12); backdrop-filter:blur(6px); opacity:.92; }
           .cursor-core { width:10px; height:10px; background:linear-gradient(135deg, rgba(255,255,255,.92), rgba(103,232,249,.92)); box-shadow:0 0 20px rgba(103,232,249,.45); }
           .cursor-shell.is-idle { width:42px; height:42px; border-color:rgba(255,244,232,.26); background:radial-gradient(circle, rgba(255,255,255,.03), rgba(103,232,249,.02)); opacity:.72; }
@@ -283,6 +283,13 @@ def root() -> str:
           const cursorShell = document.getElementById("cursor-shell");
           const cursorCore = document.getElementById("cursor-core");
           let idleTimer;
+          let cursorFrame = 0;
+          let targetX = window.innerWidth / 2;
+          let targetY = window.innerHeight / 2;
+          let shellX = targetX;
+          let shellY = targetY;
+          let coreX = targetX;
+          let coreY = targetY;
           if (menuButton && navLinks) {
             menuButton.addEventListener("click", () => {
               const expanded = menuButton.getAttribute("aria-expanded") === "true";
@@ -339,15 +346,22 @@ def root() -> str:
             window.clearTimeout(idleTimer);
             idleTimer = window.setTimeout(() => setCursorState("idle"), 140);
           };
+          const animateCursor = () => {
+            if (cursorShell && cursorCore) {
+              shellX += (targetX - shellX) * 0.18;
+              shellY += (targetY - shellY) * 0.18;
+              coreX += (targetX - coreX) * 0.34;
+              coreY += (targetY - coreY) * 0.34;
+              cursorShell.style.transform = `translate3d(${shellX}px, ${shellY}px, 0) translate3d(-50%, -50%, 0)`;
+              cursorCore.style.transform = `translate3d(${coreX}px, ${coreY}px, 0) translate3d(-50%, -50%, 0)`;
+            }
+            cursorFrame = window.requestAnimationFrame(animateCursor);
+          };
           const updateGlow = (clientX, clientY) => {
             root.style.setProperty("--cursor-x", `${clientX}px`);
             root.style.setProperty("--cursor-y", `${clientY}px`);
-            if (cursorShell && cursorCore) {
-              cursorShell.style.left = `${clientX}px`;
-              cursorShell.style.top = `${clientY}px`;
-              cursorCore.style.left = `${clientX}px`;
-              cursorCore.style.top = `${clientY}px`;
-            }
+            targetX = clientX;
+            targetY = clientY;
             if (!sceneName) { return; }
             const rect = sceneName.getBoundingClientRect();
             const x = ((clientX - rect.left) / rect.width) * 100;
@@ -355,11 +369,11 @@ def root() -> str:
             sceneName.style.setProperty("--mx", `${Math.max(0, Math.min(100, x))}%`);
             sceneName.style.setProperty("--my", `${Math.max(0, Math.min(100, y))}%`);
           };
-          window.addEventListener("mousemove", (event) => {
+          window.addEventListener("pointermove", (event) => {
             setCursorState("active");
             updateGlow(event.clientX, event.clientY);
             scheduleIdle();
-          });
+          }, { passive: true });
           window.addEventListener("touchmove", (event) => {
             const point = event.touches && event.touches[0];
             if (point) { updateGlow(point.clientX, point.clientY); }
@@ -373,11 +387,16 @@ def root() -> str:
             if (!cursorShell || !cursorCore) { return; }
             cursorShell.style.opacity = "0";
             cursorCore.style.opacity = "0";
+            if (cursorFrame) {
+              window.cancelAnimationFrame(cursorFrame);
+              cursorFrame = 0;
+            }
           });
           window.addEventListener("mouseenter", () => {
             if (!cursorShell || !cursorCore) { return; }
             cursorShell.style.opacity = "";
             cursorCore.style.opacity = "";
+            if (!cursorFrame) { animateCursor(); }
             scheduleIdle();
           });
           if (sceneName) {
@@ -391,6 +410,7 @@ def root() -> str:
             updateSceneOnScroll();
             window.addEventListener("scroll", updateSceneOnScroll, { passive: true });
           }
+          if (cursorShell && cursorCore && !cursorFrame) { animateCursor(); }
           scheduleIdle();
         </script>
       </body>
