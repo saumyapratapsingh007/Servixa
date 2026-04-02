@@ -230,6 +230,32 @@ Typical interaction flow:
 3. `GET /state` to inspect progress
 4. `GET /grader` to view deterministic scoring
 
+## Action And Observation Spaces
+
+### Action Space
+
+Agents submit a typed `SupportAction` with one of three action modes:
+
+- `classify`: set `category`, `priority`, and `route_to`
+- `respond`: choose a `template_key` from the ticket's visible `allowed_templates`
+- `resolve`: set `resolution` and optionally `close_ticket`
+
+Every action also includes `ticket_id` and may include an `internal_note`.
+
+### Observation Space
+
+Each `SupportObservation` returns:
+
+- task metadata: `task_id`, `task_title`, `objective`
+- queue summary: ticket counts, step count, and budget
+- typed ticket views with customer metadata, tags, current triage state, visible notes, and allowed templates
+- shaped reward fields: scalar reward plus named reward components and rationale
+- progress hints and last-event summary
+
+### State Space
+
+`GET /state` exposes the full typed `SupportState`, including all ticket states, action history, progress score, cumulative reward, and episode completion flags.
+
 ## Running Locally
 
 ### Docker
@@ -284,6 +310,28 @@ Key takeaways:
 - The baseline solves the easy queue perfectly.
 - It remains strong on medium and hard tasks while missing a small number of policy details.
 - That makes it a useful reference policy because it is clearly capable without looking artificially perfect.
+
+## Submission Inference Script
+
+For hackathon submission compliance, the repo now includes a root-level `inference.py`.
+
+It is designed to satisfy the additional submission rules:
+
+- uses the OpenAI-compatible client
+- reads `API_BASE_URL`, `MODEL_NAME`, and `HF_TOKEN`
+- emits structured stdout lines in `[START]`, `[STEP]`, and `[END]` format
+- runs all three tasks in sequence
+
+Example usage:
+
+```bash
+export API_BASE_URL="https://router.huggingface.co/v1"
+export MODEL_NAME="Qwen/Qwen2.5-72B-Instruct"
+export HF_TOKEN="your_token_here"
+python inference.py
+```
+
+The script uses a deterministic support-policy candidate action each step, asks the configured model to review that action through the OpenAI client, and falls back safely to the deterministic candidate if the model response is invalid or unavailable. This keeps the run reproducible while still satisfying the required model-call interface.
 
 ## Project Structure
 
