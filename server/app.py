@@ -51,13 +51,13 @@ def root() -> str:
           :root { --bg:#07111f; --bg2:#0d1830; --panel:rgba(10,19,33,.76); --line:rgba(148,163,184,.16); --text:#e5eefc; --muted:#9db0cc; --cyan:#67e8f9; --violet:#8b5cf6; --green:#34d399; --shadow:0 24px 60px rgba(2,8,23,.45); --r:24px; --t:260ms ease; }
           * { box-sizing:border-box; }
           html { scroll-behavior:smooth; }
-          body { margin:0; color:var(--text); font-family:"Segoe UI",Arial,sans-serif; background:linear-gradient(160deg, rgba(4,16,29,.82) 0%, rgba(8,19,33,.66) 42%, rgba(13,24,48,.82) 100%), radial-gradient(circle at top left, rgba(103,232,249,.14), transparent 34%), radial-gradient(circle at top right, rgba(139,92,246,.16), transparent 28%), linear-gradient(180deg, rgba(194,224,255,.18) 0%, rgba(119,170,221,.08) 24%, rgba(8,19,33,0) 58%); overflow-x:hidden; cursor:none; }
+          body { margin:0; color:var(--text); font-family:"Segoe UI",Arial,sans-serif; background:linear-gradient(180deg, rgba(5,8,15,.96) 0%, rgba(7,10,18,.94) 34%, rgba(10,16,28,.96) 100%), radial-gradient(circle at top left, rgba(103,232,249,.08), transparent 26%), radial-gradient(circle at top right, rgba(139,92,246,.10), transparent 24%), linear-gradient(180deg, rgba(194,224,255,.06) 0%, rgba(119,170,221,.03) 22%, rgba(8,19,33,0) 50%); overflow-x:hidden; cursor:none; }
           body::before, body::after { content:""; position:fixed; width:24rem; height:24rem; border-radius:50%; filter:blur(90px); opacity:.34; z-index:0; pointer-events:none; animation:floatGlow 14s ease-in-out infinite; }
           body::before { top:-10rem; right:-8rem; background:rgba(103,232,249,.26); }
           body::after { left:-8rem; bottom:-12rem; background:rgba(139,92,246,.22); animation-delay:-4s; }
           .static-logos, .floating-scaler { position:fixed; pointer-events:none; z-index:0; user-select:none; }
-          .static-logos { left:50%; top:8vh; width:min(88vw, 1100px); transform:translateX(-50%); opacity:.28; filter:drop-shadow(0 12px 36px rgba(2,8,23,.18)); }
-          .floating-scaler { right:4vw; top:62vh; width:min(40vw, 520px); opacity:.18; transform:translate3d(0, 0, 0); filter:drop-shadow(0 16px 40px rgba(2,8,23,.18)); transition:opacity 180ms ease; }
+          .static-logos { left:50%; top:8vh; width:min(92vw, 1180px); transform:translateX(-50%); opacity:.24; filter:drop-shadow(0 12px 36px rgba(2,8,23,.18)); }
+          .floating-scaler { left:50%; top:52vh; width:clamp(960px, 112vw, 1880px); max-width:none; opacity:.14; transform:translate3d(-50%, 0, 0); filter:drop-shadow(0 24px 48px rgba(2,8,23,.26)); transition:opacity 180ms ease; }
           a, button, .button, .nav-link, .nav-trigger, .endpoint { cursor:none; }
           a { color:inherit; text-decoration:none; }
           button { font:inherit; }
@@ -95,9 +95,6 @@ def root() -> str:
           .panel { position:relative; overflow:hidden; border-radius:var(--r); }
           .panel::before { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(120deg, rgba(103,232,249,.08), transparent 34%, rgba(139,92,246,.08)); }
           .hero-copy, .hero-side, .card, .task, .stack { position:relative; padding:28px; }
-          .scene-name { position:fixed; left:50%; top:18vh; transform:translate3d(-50%, 0, 0); z-index:0; pointer-events:none; text-align:center; font-size:clamp(2.8rem, 9vw, 8rem); font-weight:500; letter-spacing:.22em; text-indent:.22em; color:rgba(255,255,255,.3); text-shadow:0 0 16px rgba(255,255,255,.08), 0 0 44px rgba(255,255,255,.06); white-space:nowrap; mix-blend-mode:screen; opacity:.42; transition:transform 180ms ease-out, opacity 180ms ease-out; }
-          .scene-name::before { content:""; position:absolute; inset:-34% -12%; background:radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,.4) 0%, rgba(255,255,255,.16) 14%, rgba(255,221,191,.08) 24%, transparent 44%); filter:blur(16px); opacity:.72; z-index:-1; }
-          .scene-name::after { content:""; position:absolute; inset:-40% -18%; background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,.08) 18%, rgba(255,244,232,.14) 50%, rgba(255,255,255,.08) 82%, transparent 100%); filter:blur(22px); opacity:.24; }
           .eyebrow, .label, .task-badge { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; border:1px solid rgba(103,232,249,.14); background:rgba(103,232,249,.08); color:#c9fbff; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; }
           .hero h1 { margin:16px 0 14px; font-size:clamp(2.7rem, 6vw, 4.9rem); line-height:.96; letter-spacing:-.05em; }
           .hero h1 span { color:var(--cyan); text-shadow:0 0 26px rgba(103,232,249,.34); }
@@ -145,14 +142,14 @@ def root() -> str:
           .d1 { animation-delay:.08s; } .d2 { animation-delay:.16s; } .d3 { animation-delay:.24s; } .d4 { animation-delay:.32s; }
           @keyframes riseIn { to { opacity:1; transform:translateY(0); } }
           @keyframes floatGlow { 0%,100% { transform:translate3d(0,0,0) scale(1); } 50% { transform:translate3d(0,18px,0) scale(1.04); } }
-          @media (max-width:1024px) { .hero, .tasks, .metrics { grid-template-columns:1fr; } .span-4, .span-8 { grid-column:span 12; } .scene-name { top:14vh; font-size:clamp(2.4rem, 12vw, 5.4rem); letter-spacing:.16em; text-indent:.16em; } .static-logos { width:min(92vw, 920px); top:10vh; opacity:.22; } .floating-scaler { width:min(52vw, 420px); right:2vw; top:66vh; opacity:.15; } }
+          @media (max-width:1024px) { .hero, .tasks, .metrics { grid-template-columns:1fr; } .span-4, .span-8 { grid-column:span 12; } .static-logos { width:min(94vw, 920px); top:10vh; opacity:.2; } .floating-scaler { width:clamp(820px, 140vw, 1500px); top:58vh; opacity:.12; } }
           @media (max-width:860px) {
             .page { width:min(100% - 22px, 1180px); } .nav { flex-wrap:wrap; border-radius:28px; } .menu-button { display:inline-flex; }
             .nav-links { display:none; width:100%; flex-direction:column; align-items:stretch; padding-top:10px; } .nav-links.open { display:flex; }
             .nav-group, .nav-link, .nav-trigger, .dropdown { width:100%; } .dropdown { position:static; margin-top:8px; display:none; opacity:1; visibility:visible; transform:none; }
             .nav-group.is-open .dropdown { display:block; } .hero-copy, .hero-side, .card, .task, .stack { padding:22px; } .hero { min-height:820px; } .hero-copy, .hero-side { z-index:2; }
           }
-          @media (max-width:640px) { .page { padding-top:14px; } .hero h1 { font-size:2.55rem; } .cta-row { flex-direction:column; } .button { width:100%; } .endpoint { flex-direction:column; align-items:flex-start; } .scene-name { top:16vh; font-size:2.3rem; letter-spacing:.12em; text-indent:.12em; opacity:.34; } .static-logos { width:94vw; top:12vh; opacity:.18; } .floating-scaler { width:58vw; right:50%; top:72vh; transform:translate3d(50%, 0, 0); opacity:.14; } }
+          @media (max-width:640px) { .page { padding-top:14px; } .hero h1 { font-size:2.55rem; } .cta-row { flex-direction:column; } .button { width:100%; } .endpoint { flex-direction:column; align-items:flex-start; } .static-logos { width:96vw; top:12vh; opacity:.16; } .floating-scaler { width:clamp(760px, 190vw, 1320px); top:66vh; opacity:.1; } }
           @media (pointer:coarse) { body, a, button, .button, .nav-link, .nav-trigger, .endpoint { cursor:auto; } .cursor-shell, .cursor-core { display:none; } }
         </style>
       </head>
@@ -195,7 +192,6 @@ def root() -> str:
           </nav>
 
           <section class="hero">
-            <div class="scene-name" id="scene-name">SAUMYA</div>
             <div class="panel hero-copy reveal d1" id="overview">
               <div class="eyebrow">OpenEnv-compatible simulation</div>
               <h1>Evaluate support agents with <span>speed</span> and clarity.</h1>
@@ -284,7 +280,6 @@ def root() -> str:
           const menuButton = document.getElementById("menu-button");
           const navLinks = document.getElementById("nav-links");
           const navGroups = Array.from(document.querySelectorAll(".nav-group"));
-          const sceneName = document.getElementById("scene-name");
           const floatingScaler = document.getElementById("floating-scaler");
           const cursorShell = document.getElementById("cursor-shell");
           const cursorCore = document.getElementById("cursor-core");
@@ -368,12 +363,6 @@ def root() -> str:
             root.style.setProperty("--cursor-y", `${clientY}px`);
             targetX = clientX;
             targetY = clientY;
-            if (!sceneName) { return; }
-            const rect = sceneName.getBoundingClientRect();
-            const x = ((clientX - rect.left) / rect.width) * 100;
-            const y = ((clientY - rect.top) / rect.height) * 100;
-            sceneName.style.setProperty("--mx", `${Math.max(0, Math.min(100, x))}%`);
-            sceneName.style.setProperty("--my", `${Math.max(0, Math.min(100, y))}%`);
           };
           window.addEventListener("pointermove", (event) => {
             setCursorState("active");
@@ -405,25 +394,17 @@ def root() -> str:
             if (!cursorFrame) { animateCursor(); }
             scheduleIdle();
           });
-          if (sceneName) {
-            const updateSceneOnScroll = () => {
-              const scrollY = window.scrollY || window.pageYOffset || 0;
-              const offset = Math.min(scrollY * 0.18, 120);
-              const fadedOpacity = Math.max(0.12, 0.42 - (scrollY / 1800));
-              sceneName.style.transform = `translate3d(-50%, ${offset}px, 0)`;
-              sceneName.style.opacity = String(fadedOpacity);
-              if (floatingScaler) {
-                const floaterOffset = Math.min(scrollY * 0.42, 420);
-                const floaterFade = Math.max(0.08, 0.18 - (scrollY / 3200));
-                floatingScaler.style.transform = window.matchMedia("(max-width: 640px)").matches
-                  ? `translate3d(50%, ${floaterOffset}px, 0)`
-                  : `translate3d(0, ${floaterOffset}px, 0)`;
-                floatingScaler.style.opacity = String(floaterFade);
-              }
-            };
-            updateSceneOnScroll();
-            window.addEventListener("scroll", updateSceneOnScroll, { passive: true });
-          }
+          const updateSceneOnScroll = () => {
+            const scrollY = window.scrollY || window.pageYOffset || 0;
+            if (floatingScaler) {
+              const floaterOffset = Math.min(scrollY * 0.46, 460);
+              const floaterFade = Math.max(0.06, 0.14 - (scrollY / 3000));
+              floatingScaler.style.transform = `translate3d(-50%, ${floaterOffset}px, 0)`;
+              floatingScaler.style.opacity = String(floaterFade);
+            }
+          };
+          updateSceneOnScroll();
+          window.addEventListener("scroll", updateSceneOnScroll, { passive: true });
           if (cursorShell && cursorCore && !cursorFrame) { animateCursor(); }
           scheduleIdle();
         </script>
