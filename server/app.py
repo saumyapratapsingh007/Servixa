@@ -73,7 +73,7 @@ def root() -> str:
           button { font:inherit; }
           .static-logos, .floating-scaler { position:fixed; pointer-events:none; user-select:none; }
           .static-logos { left:50%; top:12vh; z-index:0; width:min(94vw, 1260px); transform:translateX(-50%); opacity:.56; filter:drop-shadow(0 18px 42px rgba(2,8,23,.34)); }
-          .floating-scaler { left:50%; top:4vh; z-index:12; width:min(96vw, 1540px); height:min(34vw, 360px); max-width:none; opacity:.92; transform:translate3d(-50%, 0, 0); filter:drop-shadow(0 24px 60px rgba(2,8,23,.42)); transition:opacity 180ms ease, transform 180ms ease; border:0; background:transparent; }
+          .floating-scaler { left:50%; top:4vh; z-index:12; width:min(96vw, 1540px); max-width:none; opacity:.92; transform:translate3d(-50%, 0, 0); filter:drop-shadow(0 24px 60px rgba(2,8,23,.42)); transition:opacity 180ms ease, transform 180ms ease; }
           .page { position:relative; z-index:1; width:min(1180px, calc(100% - 32px)); margin:0 auto; padding:20px 0 56px; }
           .page::before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none; background:
             radial-gradient(circle at var(--cursor-x, 50%) var(--cursor-y, 24%), rgba(255,244,232,.22) 0%, rgba(255,236,214,.12) 10%, rgba(103,232,249,.12) 20%, transparent 42%);
@@ -155,20 +155,20 @@ def root() -> str:
           .d1 { animation-delay:.08s; } .d2 { animation-delay:.16s; } .d3 { animation-delay:.24s; } .d4 { animation-delay:.32s; }
           @keyframes riseIn { to { opacity:1; transform:translateY(0); } }
           @keyframes floatGlow { 0%,100% { transform:translate3d(0,0,0) scale(1); } 50% { transform:translate3d(0,18px,0) scale(1.04); } }
-          @media (max-width:1024px) { .hero, .tasks, .metrics { grid-template-columns:1fr; } .span-4, .span-8 { grid-column:span 12; } .static-logos { width:min(96vw, 980px); top:14vh; opacity:.46; } .floating-scaler { width:min(100vw, 1320px); height:min(36vw, 300px); top:5vh; opacity:.88; } }
+          @media (max-width:1024px) { .hero, .tasks, .metrics { grid-template-columns:1fr; } .span-4, .span-8 { grid-column:span 12; } .static-logos { width:min(96vw, 980px); top:14vh; opacity:.46; } .floating-scaler { width:min(100vw, 1320px); top:5vh; opacity:.88; } }
           @media (max-width:860px) {
             .page { width:min(100% - 22px, 1180px); } .nav { flex-wrap:wrap; border-radius:28px; } .menu-button { display:inline-flex; }
             .nav-links { display:none; width:100%; flex-direction:column; align-items:stretch; padding-top:10px; } .nav-links.open { display:flex; }
             .nav-group, .nav-link, .nav-trigger, .dropdown { width:100%; } .dropdown { position:static; margin-top:8px; display:none; opacity:1; visibility:visible; transform:none; }
             .nav-group.is-open .dropdown { display:block; } .hero-copy, .hero-side, .card, .task, .stack { padding:22px; } .hero { min-height:820px; } .hero-copy, .hero-side { z-index:2; }
           }
-          @media (max-width:640px) { .page { padding-top:14px; } .hero { padding-top:88px; } .hero h1 { font-size:2.55rem; } .cta-row { flex-direction:column; } .button { width:100%; } .endpoint { flex-direction:column; align-items:flex-start; } .static-logos { width:98vw; top:18vh; opacity:.38; } .floating-scaler { width:100vw; height:min(42vw, 220px); top:6vh; opacity:.82; } }
+          @media (max-width:640px) { .page { padding-top:14px; } .hero { padding-top:88px; } .hero h1 { font-size:2.55rem; } .cta-row { flex-direction:column; } .button { width:100%; } .endpoint { flex-direction:column; align-items:flex-start; } .static-logos { width:98vw; top:18vh; opacity:.38; } .floating-scaler { width:100vw; top:6vh; opacity:.82; } }
           @media (pointer:coarse) { body, a, button, .button, .nav-link, .nav-trigger, .endpoint { cursor:auto; } .cursor-shell, .cursor-core { display:none; } }
         </style>
       </head>
       <body>
-          <img class="static-logos" id="static-logos" src="/assets/alllogos.png" alt="" />
-          <iframe class="floating-scaler" id="floating-scaler" src="/assets/coming-soon.pdf#toolbar=0&navpanes=0&scrollbar=0&view=FitH" title="Coming soon banner" aria-label="Coming soon banner"></iframe>
+        <img class="static-logos" id="static-logos" src="/assets/alllogos.png" alt="" />
+        <img class="floating-scaler" id="floating-scaler" src="/assets/coming-soon.png" alt="Coming soon banner" />
         <div class="cursor-shell" id="cursor-shell" aria-hidden="true"></div>
         <div class="cursor-core" id="cursor-core" aria-hidden="true"></div>
         <div class="page">
