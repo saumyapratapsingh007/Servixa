@@ -14,12 +14,13 @@ from openai import OpenAI
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY") or "missing-token"
+HF_TOKEN = os.getenv("HF_TOKEN")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 BENCHMARK = "supportops_env"
 TEMPERATURE = 0.0
 MAX_TOKENS = 220
 SUCCESS_SCORE_THRESHOLD = 0.90
-MODEL_REVIEW_ENABLED = HF_TOKEN != "missing-token"
+MODEL_REVIEW_ENABLED = bool(HF_TOKEN)
 
 SYSTEM_PROMPT = (
     "You are reviewing the next action for a customer support triage environment. "
