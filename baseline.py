@@ -2,39 +2,12 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from env.environment import SupportOpsEnvironment
 from env.grader import grade_episode
 from env.models import SupportAction
 from env.tasks import TASKS, list_task_summaries
-
-try:
-    from openai import OpenAI
-except Exception:  # pragma: no cover
-    OpenAI = None  # type: ignore[assignment]
-
-
-MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-
-
-def _optional_openai_brief(task_summary: Dict[str, object]) -> Optional[str]:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key or OpenAI is None:
-        return None
-    try:
-        client = OpenAI(api_key=api_key)
-        response = client.responses.create(
-            model=MODEL_NAME,
-            input=(
-                "Return one short sentence that summarizes the support triage goal for this task.\n\n"
-                f"Task: {json.dumps(task_summary, ensure_ascii=True)}"
-            ),
-            max_output_tokens=40,
-        )
-        return getattr(response, "output_text", None)
-    except Exception:
-        return None
 
 
 def _classify_policy(ticket: Dict[str, Any]) -> Dict[str, str]:
@@ -119,14 +92,6 @@ def run_baseline() -> Dict[str, object]:
     for task in TASKS:
         env = SupportOpsEnvironment()
         observation = env.reset(task_id=str(task["id"]))
-        openai_brief = _optional_openai_brief(
-            {
-                "id": task["id"],
-                "title": task["title"],
-                "objective": task["objective"],
-                "ticket_count": len(task["tickets"]),
-            }
-        )
         action_trace: List[Dict[str, object]] = []
 
         for ticket in observation.tickets:
@@ -175,18 +140,15 @@ def run_baseline() -> Dict[str, object]:
                 "difficulty": task["difficulty"],
                 "score": score,
                 "grader_report": report,
-                "openai_brief": openai_brief,
                 "steps": env.state.step_count,
                 "action_trace": action_trace,
             }
         )
 
     return {
-        "model": MODEL_NAME,
         "tasks": list_task_summaries(),
         "results": results,
         "average_score": round(sum(per_task_scores) / len(per_task_scores), 4),
-        "used_openai_api": bool(os.getenv("OPENAI_API_KEY") and OpenAI is not None),
     }
 
 
