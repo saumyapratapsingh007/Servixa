@@ -354,6 +354,7 @@ It:
 
 - uses the OpenAI-compatible client
 - reads `API_BASE_URL`, `MODEL_NAME`, and `HF_TOKEN`
+- optionally reads `LOCAL_IMAGE_NAME` for Docker-image based runs
 - emits `[START]`, `[STEP]`, and `[END]` logs in the required format
 - runs all three tasks
 - falls back safely if the model endpoint is unavailable
@@ -481,12 +482,4 @@ Servixa is strong for this hackathon because it combines:
 - live deployment on Hugging Face Spaces
 
 Most importantly, it evaluates operational judgment, not just text generation.
-
-## Recommended Final Submission Extras
-
-If you want to strengthen the project even more before final judging, the highest-value additions would be:
-
-1. a short GIF or screen recording of the environment loop
-2. one weaker comparison baseline to show the grader separates weak and strong policies
-3. a short note on why customer support triage is a good RL and agent-evaluation benchmark
 
