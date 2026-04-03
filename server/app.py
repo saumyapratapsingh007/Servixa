@@ -532,7 +532,8 @@ def schema() -> SchemaPayload:
 
 
 @app.post("/reset", response_model=SupportObservation)
-def reset(payload: ResetPayload) -> SupportObservation:
+def reset(payload: Optional[ResetPayload] = None) -> SupportObservation:
+    payload = payload or ResetPayload()
     return get_environment().reset(
         seed=payload.seed,
         episode_id=payload.episode_id,
