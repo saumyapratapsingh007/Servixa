@@ -168,7 +168,7 @@ def root() -> str:
       </head>
       <body>
         <img class="static-logos" id="static-logos" src="/assets/alllogos.png" alt="" />
-        <img class="floating-scaler" id="floating-scaler" src="/assets/coming-soon.png" alt="Coming soon banner" />
+        <img class="floating-scaler" id="floating-scaler" src="/assets/floater.png" alt="" />
         <div class="cursor-shell" id="cursor-shell" aria-hidden="true"></div>
         <div class="cursor-core" id="cursor-core" aria-hidden="true"></div>
         <div class="page">
