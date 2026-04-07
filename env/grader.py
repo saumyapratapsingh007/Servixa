@@ -95,13 +95,15 @@ def grade_state(state: SupportState) -> Dict[str, object]:
     }
 
 
-def grade_episode(state: SupportState) -> Tuple[int, Dict[str, object]]:
+def grade_episode(state: SupportState) -> Tuple[float, Dict[str, object]]:
     report = grade_state(state)
-normalized_score = report["score"] / 100
 
-if normalized_score <= 0:
-    normalized_score = 0.0001
-elif normalized_score >= 1:
-    normalized_score = 0.9999
+    normalized_score = report["score"] / 100
 
-return normalized_score, report
+    
+    if normalized_score <= 0:
+        normalized_score = 0.0001
+    elif normalized_score >= 1:
+        normalized_score = 0.9999
+
+    return normalized_score, report
