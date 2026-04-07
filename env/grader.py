@@ -5,37 +5,27 @@ from typing import Dict, List, Tuple
 from .models import SupportState, TicketState
 
 
-WEIGHTS: Dict[str, float] = {
-    "category": 0.20,
-    "priority": 0.15,
-    "route": 0.20,
-    "template": 0.15,
-    "resolution": 0.20,
-    "closure": 0.10,
+WEIGHTS: Dict[str, int] = {
+    "category": 20,
+    "priority": 15,
+    "route": 20,
+    "template": 15,
+    "resolution": 20,
+    "closure": 10,
 }
-_EPSILON = 1e-4
 
 
-def _strict_unit_interval(value: float) -> float:
-    """
-    Submission validators require task scores to be strictly inside (0, 1).
-    Keep rounding stable for reporting while avoiding exact boundary values.
-    """
-    bounded = min(1.0 - _EPSILON, max(_EPSILON, value))
-    return round(bounded, 4)
-
-
-def _ticket_breakdown(ticket: TicketState) -> Dict[str, float]:
-    closure_score = 0.0
+def _ticket_breakdown(ticket: TicketState) -> Dict[str, int]:
+    closure_score = 0
     if ticket.resolution is not None and ticket.closed == ticket.must_close:
         closure_score = WEIGHTS["closure"]
 
     breakdown = {
-        "category": WEIGHTS["category"] if ticket.current_category == ticket.expected_category else 0.0,
-        "priority": WEIGHTS["priority"] if ticket.current_priority == ticket.expected_priority else 0.0,
-        "route": WEIGHTS["route"] if ticket.current_route == ticket.expected_route else 0.0,
-        "template": WEIGHTS["template"] if ticket.last_response_template == ticket.expected_template else 0.0,
-        "resolution": WEIGHTS["resolution"] if ticket.resolution == ticket.expected_resolution else 0.0,
+        "category": WEIGHTS["category"] if ticket.current_category == ticket.expected_category else 0,
+        "priority": WEIGHTS["priority"] if ticket.current_priority == ticket.expected_priority else 0,
+        "route": WEIGHTS["route"] if ticket.current_route == ticket.expected_route else 0,
+        "template": WEIGHTS["template"] if ticket.last_response_template == ticket.expected_template else 0,
+        "resolution": WEIGHTS["resolution"] if ticket.resolution == ticket.expected_resolution else 0,
         "closure": closure_score,
     }
 
@@ -51,23 +41,25 @@ def grade_state(state: SupportState) -> Dict[str, object]:
     if not state.tickets:
         return {
             "task_id": state.task_id,
-            "score": _strict_unit_interval(0.0),
+            "score": 0,
             "ticket_scores": [],
             "summary": {
                 "tickets_completed": 0,
                 "tickets_total": 0,
-                "efficiency_penalty": 0.0,
-                "base_score": 0.0,
+                "efficiency_penalty": 0,
+                "base_score": 0,
                 "step_count": state.step_count,
             },
         }
 
     ticket_scores: List[Dict[str, object]] = []
-    raw_scores: List[float] = []
+    raw_scores: List[int] = []
+
     for ticket in state.tickets:
         breakdown = _ticket_breakdown(ticket)
-        raw_score = _strict_unit_interval(sum(breakdown.values()))
+        raw_score = sum(breakdown.values())  # already 0–100 scale
         raw_scores.append(raw_score)
+
         ticket_scores.append(
             {
                 "ticket_id": ticket.ticket_id,
@@ -79,13 +71,16 @@ def grade_state(state: SupportState) -> Dict[str, object]:
             }
         )
 
-    base_score = sum(raw_scores) / len(raw_scores)
+    base_score = sum(raw_scores) // len(raw_scores)
+
     expected_steps = len(state.tickets) * 3
     overage = max(0, state.step_count - expected_steps)
-    efficiency_penalty = min(0.18, overage * 0.02)
-    final_score = _strict_unit_interval(base_score - efficiency_penalty)
 
-    tickets_completed = sum(1 for score in raw_scores if score >= 0.75)
+    efficiency_penalty = min(18, overage * 2)  # scaled from 0.02 → 2
+    final_score = max(0, base_score - efficiency_penalty)
+
+    tickets_completed = sum(1 for score in raw_scores if score >= 75)
+
     return {
         "task_id": state.task_id,
         "score": final_score,
@@ -93,13 +88,13 @@ def grade_state(state: SupportState) -> Dict[str, object]:
         "summary": {
             "tickets_completed": tickets_completed,
             "tickets_total": len(state.tickets),
-            "efficiency_penalty": round(efficiency_penalty, 4),
-            "base_score": round(base_score, 4),
+            "efficiency_penalty": efficiency_penalty,
+            "base_score": base_score,
             "step_count": state.step_count,
         },
     }
 
 
-def grade_episode(state: SupportState) -> Tuple[float, Dict[str, object]]:
+def grade_episode(state: SupportState) -> Tuple[int, Dict[str, object]]:
     report = grade_state(state)
-    return float(report["score"]), report
+    return report["score"], report
