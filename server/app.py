@@ -215,7 +215,7 @@ def root() -> str:
               </div>
               <div class="metrics">
                 <div class="metric"><strong>3</strong><span>Difficulty tiers across realistic support workflows</span></div>
-                <div class="metric"><strong>0.9708</strong><span>Average baseline score across the benchmark suite</span></div>
+                <div class="metric"><strong>0.9707</strong><span>Average baseline score across the benchmark suite</span></div>
                 <div class="metric"><strong>HTTP</strong><span>Simple reset-step-state loop for fast agent integration</span></div>
               </div>
             </div>
