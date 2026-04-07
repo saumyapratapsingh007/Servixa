@@ -195,7 +195,7 @@ def run_task(client: Optional[OpenAI], task_id: str) -> Dict[str, Any]:
             heuristic_action = _next_heuristic_action(observation)
             action = _request_model_action(client, observation, heuristic_action)
             observation = env.step(action)
-            reward = float(observation.reward or 0.0)
+            reward = int(observation.reward or 0.0)
             rewards.append(reward)
             steps_taken = step
             log_step(step=step, action=_action_str(action), reward=reward, done=observation.done, error=None)
