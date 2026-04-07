@@ -59,7 +59,7 @@ For every ticket, the agent typically needs to:
 5. record the right resolution
 6. decide whether the ticket can be closed
 
-The environment returns shaped reward throughout the trajectory and a deterministic final grader score in the range `0.0` to `1.0`.
+The environment returns shaped reward throughout the trajectory and a deterministic final grader score strictly inside `(0, 1)`.
 
 ## Why It Is Useful
 
@@ -81,7 +81,7 @@ flowchart LR
     B --> C["SupportOpsEnvironment"]
     C --> D["Ticket State + Reward Shaping"]
     C --> E["Deterministic Grader"]
-    E --> F["Task Score 0.0 - 1.0"]
+    E --> F["Task Score (0, 1)"]
 ```
 
 ### 1. API Layer
@@ -320,7 +320,7 @@ The final episode score is:
 
 - average ticket score
 - minus any efficiency penalty
-- clamped to `0.0` through `1.0`
+- clipped to stay strictly inside `(0, 1)` for validator compliance
 
 That makes the grading:
 
@@ -341,10 +341,10 @@ Measured locally:
 
 | Task | Score |
 |---|---:|
-| Easy | `1.0000` |
+| Easy | `0.9999` |
 | Medium | `0.9500` |
 | Hard | `0.9625` |
-| Average | `0.9708` |
+| Average | `0.9707` |
 
 ## Submission Inference Script
 
