@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 
 
 class SupportReward(BaseModel):
-    score: float = Field(..., ge=-1.0, le=1.0, description="Reward assigned to the most recent action.")
-    components: Dict[str, float] = Field(
+    score: int = Field(..., ge=-100, le=100, description="Reward assigned to the most recent action.")
+    components: Dict[str, int] = Field(
         default_factory=dict,
         description="Named reward components used for deterministic shaping.",
     )
@@ -71,8 +71,8 @@ class SupportObservation(Observation):
     queue_summary: QueueSummary
     tickets: List[TicketView] = Field(default_factory=list)
     last_event: str = Field(default="", description="Summary of what happened in the last step.")
-    progress_score: float = Field(default=0.0, ge=0.0, le=1.0)
-    reward_details: SupportReward = Field(default_factory=lambda: SupportReward(score=0.0))
+    progress_score: int = Field(default=0, ge=0, le=100)
+    reward_details: SupportReward = Field(default_factory=lambda: SupportReward(score=0))
     hints: List[str] = Field(default_factory=list)
 
 
@@ -113,10 +113,11 @@ class SupportState(State):
     task_title: str = Field(default="")
     objective: str = Field(default="")
     max_steps: int = Field(default=0)
-    total_reward: float = Field(default=0.0)
-    progress_score: float = Field(default=0.0)
+    total_reward: int = Field(default=0)
+    progress_score: int = Field(default=0)
     completed: bool = Field(default=False)
     failure_reason: Optional[str] = Field(default=None)
     guidance: List[str] = Field(default_factory=list)
     tickets: List[TicketState] = Field(default_factory=list)
     action_history: List[Dict[str, Any]] = Field(default_factory=list)
+    
