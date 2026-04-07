@@ -57,7 +57,7 @@ def grade_state(state: SupportState) -> Dict[str, object]:
 
     for ticket in state.tickets:
         breakdown = _ticket_breakdown(ticket)
-        raw_score = sum(breakdown.values())  # already 0–100 scale
+        raw_score = sum(breakdown.values()) 
         raw_scores.append(raw_score)
 
         ticket_scores.append(
@@ -76,7 +76,7 @@ def grade_state(state: SupportState) -> Dict[str, object]:
     expected_steps = len(state.tickets) * 3
     overage = max(0, state.step_count - expected_steps)
 
-    efficiency_penalty = min(18, overage * 2)  # scaled from 0.02 → 2
+    efficiency_penalty = min(18, overage * 2) 
     final_score = max(0, base_score - efficiency_penalty)
 
     tickets_completed = sum(1 for score in raw_scores if score >= 75)
@@ -97,4 +97,11 @@ def grade_state(state: SupportState) -> Dict[str, object]:
 
 def grade_episode(state: SupportState) -> Tuple[int, Dict[str, object]]:
     report = grade_state(state)
-    return report["score"], report
+normalized_score = report["score"] / 100
+
+if normalized_score <= 0:
+    normalized_score = 0.0001
+elif normalized_score >= 1:
+    normalized_score = 0.9999
+
+return normalized_score, report
