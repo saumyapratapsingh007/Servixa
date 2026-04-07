@@ -15,12 +15,13 @@ from openai import OpenAI
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 BENCHMARK = "supportops_env"
 TEMPERATURE = 0.0
 MAX_TOKENS = 220
-SUCCESS_SCORE_THRESHOLD = 0.90
+
+SUCCESS_SCORE_THRESHOLD = 90  # integer scale
 MODEL_REVIEW_ENABLED = bool(HF_TOKEN)
+
 
 SYSTEM_PROMPT = (
     "You are reviewing the next action for a customer support triage environment. "
@@ -34,18 +35,17 @@ def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+def log_step(step: int, action: str, reward: int, done: bool, error: Optional[str]) -> None:
     error_val = error if error else "null"
     print(
-        f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error={error_val}",
+        f"[STEP] step={step} action={action} reward={reward} done={str(done).lower()} error={error_val}",
         flush=True,
     )
 
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    rewards_str = ",".join(f"{reward:.2f}" for reward in rewards)
-    del score
-    print(f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}", flush=True)
+def log_end(success: bool, steps: int, score: int, rewards: List[int]) -> None:
+    rewards_str = ",".join(str(r) for r in rewards)
+    print(f"[END] success={str(success).lower()} steps={steps} score={score} rewards={rewards_str}", flush=True)
 
 
 def _ticket_to_dict(ticket: TicketView) -> Dict[str, Any]:
@@ -78,7 +78,7 @@ def _baseline_action(task_id: str, ticket: TicketView) -> SupportAction:
         return SupportAction(
             action_type="classify",
             ticket_id=ticket.ticket_id,
-            internal_note="Inference baseline triage classification.",
+            internal_note="Inference baseline classification.",
             **classify_payload,
         )
 
@@ -88,15 +88,14 @@ def _baseline_action(task_id: str, ticket: TicketView) -> SupportAction:
             action_type="respond",
             ticket_id=ticket.ticket_id,
             template_key=template_key,
-            internal_note="Inference baseline customer update.",
+            internal_note="Inference baseline response.",
         )
 
-    resolution_payload = _resolution_policy(ticket_data)
     return SupportAction(
         action_type="resolve",
         ticket_id=ticket.ticket_id,
         internal_note="Inference baseline resolution.",
-        **resolution_payload,
+        **_resolution_policy(ticket_data),
     )
 
 
@@ -104,13 +103,14 @@ def _next_heuristic_action(observation: SupportObservation) -> SupportAction:
     for ticket in observation.tickets:
         if ticket.resolution is None:
             return _baseline_action(observation.task_id, ticket)
+
     return SupportAction(
         action_type="classify",
         ticket_id=observation.tickets[0].ticket_id,
         category=observation.tickets[0].current_category or "general_support",
         priority=observation.tickets[0].current_priority or "medium",
         route_to=observation.tickets[0].current_route or "frontline",
-        internal_note="Fallback no-op classification.",
+        internal_note="Fallback no-op.",
     )
 
 
@@ -142,17 +142,14 @@ def _request_model_action(client: Optional[OpenAI], observation: SupportObservat
         return candidate
 
     tickets = [_ticket_to_dict(ticket) for ticket in observation.tickets]
+
     user_prompt = json.dumps(
         {
             "task_id": observation.task_id,
-            "task_title": observation.task_title,
             "objective": observation.objective,
-            "queue_summary": observation.queue_summary.model_dump(),
             "tickets": tickets,
             "candidate_action": _safe_action_json(candidate),
-            "instruction": "Keep the candidate unless it is clearly unsafe or invalid.",
-        },
-        ensure_ascii=True,
+        }
     )
 
     try:
@@ -166,24 +163,28 @@ def _request_model_action(client: Optional[OpenAI], observation: SupportObservat
             max_tokens=MAX_TOKENS,
             response_format={"type": "json_object"},
         )
+
         content = (response.choices[0].message.content or "").strip()
         parsed = _parse_model_action(content)
         return parsed or candidate
+
     except Exception:
         MODEL_REVIEW_ENABLED = False
         return candidate
 
 
 def _action_str(action: SupportAction) -> str:
-    fields = _safe_action_json(action)
-    compact = {key: value for key, value in fields.items() if value not in (None, "", False)}
-    return json.dumps(compact, ensure_ascii=True, separators=(",", ":"))
+    return json.dumps(
+        {k: v for k, v in _safe_action_json(action).items() if v not in (None, "", False)},
+        separators=(",", ":"),
+    )
 
 
 def run_task(client: Optional[OpenAI], task_id: str) -> Dict[str, Any]:
     env = SupportOpsEnvironment()
     observation = env.reset(task_id=task_id)
-    rewards: List[float] = []
+
+    rewards: List[int] = []
     steps_taken = 0
 
     log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
@@ -192,25 +193,30 @@ def run_task(client: Optional[OpenAI], task_id: str) -> Dict[str, Any]:
         for step in range(1, observation.queue_summary.max_steps + 1):
             if observation.done:
                 break
-            heuristic_action = _next_heuristic_action(observation)
-            action = _request_model_action(client, observation, heuristic_action)
+
+            action = _request_model_action(client, observation, _next_heuristic_action(observation))
             observation = env.step(action)
-            reward = int(observation.reward or 0.0)
+
+            reward = int(observation.reward or 0)
             rewards.append(reward)
             steps_taken = step
-            log_step(step=step, action=_action_str(action), reward=reward, done=observation.done, error=None)
+
+            log_step(step, _action_str(action), reward, observation.done, None)
+
             if observation.done:
                 break
+
     finally:
         score, report = grade_episode(env.state)
         success = score >= SUCCESS_SCORE_THRESHOLD
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+        log_end(success, steps_taken, score, rewards)
 
     return {"task_id": task_id, "score": score, "report": report}
 
 
 def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN, timeout=12.0) if MODEL_REVIEW_ENABLED else None
+
     for task in TASKS:
         run_task(client, str(task["id"]))
 
