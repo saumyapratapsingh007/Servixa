@@ -88,7 +88,7 @@ def _baseline_adjustments(task_id: str, ticket: Dict[str, Any]) -> Dict[str, Any
 
 def run_baseline() -> Dict[str, object]:
     results: List[Dict[str, object]] = []
-    per_task_scores: List[int] = []
+    per_task_scores: List[float] = []
 
     for task in TASKS:
         env = SupportOpsEnvironment()
@@ -148,12 +148,12 @@ def run_baseline() -> Dict[str, object]:
             }
         )
 
-    average_score = sum(per_task_scores) // len(per_task_scores)
+    average_score = round(sum(per_task_scores) / len(per_task_scores),4),
 
     return {
         "tasks": list_task_summaries(),
         "results": results,
-        "average_score": average_score,
+        "average_score": average_score,    
     }
 
 
