@@ -224,7 +224,7 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
 
     def _refresh_progress(self) -> None:
         report = grade_state(self._state)
-        self._state.progress_score = int(report["score"])
+        self._state.progress_score = int(round(float(report["score"]) * 100))
 
     def _update_done_flags(self) -> None:
         all_minimally_handled = all(
@@ -273,7 +273,9 @@ class SupportOpsEnvironment(Environment[SupportAction, SupportObservation, Suppo
         ]
         handled = sum(1 for ticket in self._state.tickets if ticket.resolution is not None)
         escalated = sum(
-            1 for ticket in self._state.tickets if ticket.current_route in {"security", "trust_safety", "tech_ops", "billing", "logistics"}
+            1
+            for ticket in self._state.tickets
+            if ticket.current_route in {"security", "trust_safety", "tech_ops", "billing", "logistics"}
         )
         closed = sum(1 for ticket in self._state.tickets if ticket.closed)
         queue_summary = QueueSummary(
