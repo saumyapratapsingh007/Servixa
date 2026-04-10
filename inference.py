@@ -1,60 +1,95 @@
 from __future__ import annotations
 
-import json
+import ast
+import io
 import os
-from typing import Any, Dict, List, Optional
+import re
+import sys
+from contextlib import redirect_stdout
+from typing import Any, Dict, List, Optional, Tuple
 
-from baseline import _baseline_adjustments, _classify_policy, _resolution_policy, _response_policy
+from openai import OpenAI
+
 from env.environment import SupportOpsEnvironment
 from env.grader import grade_episode
 from env.models import SupportAction, SupportObservation, TicketView
 from env.tasks import TASKS
-from openai import OpenAI
 
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
 HF_TOKEN = os.getenv("HF_TOKEN")
+if HF_TOKEN is None:
+    raise ValueError("HF_TOKEN is required")
+
 BENCHMARK = "supportops_env"
-TEMPERATURE = 0.0
-MAX_TOKENS = 220
+REQUEST_TIMEOUT_SECONDS = 12.0
+MAX_OUTPUT_TOKENS = 120
+ACTION_PATTERN = re.compile(r"^(classify|respond|resolve)\((.*)\)$")
 
-SUCCESS_SCORE_THRESHOLD = 0.90  
-MODEL_REVIEW_ENABLED = bool(HF_TOKEN)
-
-
-SYSTEM_PROMPT = (
-    "You are reviewing the next action for a customer support triage environment. "
-    "Return exactly one JSON object with keys action_type, ticket_id, category, priority, "
-    "route_to, template_key, resolution, internal_note, close_ticket. "
-    "If the provided candidate action is already safe and sensible, return it unchanged."
-)
-
-
-def log_start(task: str, env: str, model: str) -> None:
-    print(f"[START] task={task} env={env} model={model}", flush=True)
+SYSTEM_PROMPT = """You are controlling a deterministic support triage environment.
+Return exactly one action string and nothing else.
+Allowed formats:
+classify('TICKET_ID','CATEGORY','PRIORITY','ROUTE')
+respond('TICKET_ID','TEMPLATE_KEY')
+resolve('TICKET_ID','RESOLUTION',true)
+resolve('TICKET_ID','RESOLUTION',false)
+Choose the next best action for the current queue state.
+Do not wrap the answer in JSON, markdown, or explanation."""
 
 
-def log_step(step: int, action: str, reward: int, done: bool, error: Optional[str]) -> None:
-    error_val = error if error else "null"
+def _configure_stdout() -> None:
+    try:
+        sys.stdout.reconfigure(line_buffering=True, write_through=True)
+    except AttributeError:
+        pass
+
+
+def _single_line(value: Any) -> str:
+    text = str(value)
+    text = text.replace("\r", " ").replace("\n", " ")
+    return " ".join(text.split())
+
+
+def _bool_text(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def _reward_text(value: float) -> str:
+    return f"{float(value):.2f}"
+
+
+def log_start(task_name: str, env_name: str, model_name: str) -> None:
     print(
-        f"[STEP] step={step} action={action} reward={reward} done={str(done).lower()} error={error_val}",
+        f"[START] task={_single_line(task_name)} env={_single_line(env_name)} model={_single_line(model_name)}",
         flush=True,
     )
 
 
-def log_end(success: bool, steps: int, score: int, rewards: List[int]) -> None:
-    rewards_str = ",".join(str(r) for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score} rewards={rewards_str}", flush=True)
+def log_step(step: int, action_str: str, reward: float, done: bool, error: Optional[str]) -> None:
+    error_value = "null" if error is None else _single_line(error)
+    print(
+        f"[STEP] step={step} action={_single_line(action_str)} reward={_reward_text(reward)} "
+        f"done={_bool_text(done)} error={error_value}",
+        flush=True,
+    )
 
 
-def _ticket_to_dict(ticket: TicketView) -> Dict[str, Any]:
+def log_end(success: bool, steps: int, rewards: List[float]) -> None:
+    reward_values = ",".join(_reward_text(reward) for reward in rewards)
+    print(f"[END] success={_bool_text(success)} steps={steps} rewards={reward_values}", flush=True)
+
+
+def _ticket_payload(ticket: TicketView) -> Dict[str, Any]:
     return {
         "ticket_id": ticket.ticket_id,
         "subject": ticket.subject,
+        "body": ticket.body,
         "channel": ticket.channel,
         "customer_tier": ticket.customer_tier,
         "tags": ticket.tags,
+        "allowed_templates": ticket.allowed_templates,
+        "visible_notes": ticket.visible_notes,
         "current_status": ticket.current_status,
         "current_category": ticket.current_category,
         "current_priority": ticket.current_priority,
@@ -62,163 +97,231 @@ def _ticket_to_dict(ticket: TicketView) -> Dict[str, Any]:
         "last_response_template": ticket.last_response_template,
         "resolution": ticket.resolution,
         "closed": ticket.closed,
-        "allowed_templates": ticket.allowed_templates,
-        "visible_notes": ticket.visible_notes,
     }
 
 
-def _baseline_action(task_id: str, ticket: TicketView) -> SupportAction:
-    ticket_data = ticket.model_dump()
-    adjustments = _baseline_adjustments(task_id, ticket_data)
+def _quote(value: str) -> str:
+    return repr(str(value))
 
-    if ticket.current_category is None:
-        classify_payload = _classify_policy(ticket_data)
-        if "priority" in adjustments:
-            classify_payload["priority"] = adjustments["priority"]
+
+def _parse_action_string(action_str: str) -> SupportAction:
+    raw = _single_line(action_str)
+    match = ACTION_PATTERN.match(raw)
+    if not match:
+        raise ValueError("invalid action format")
+
+    action_type = match.group(1)
+    arguments_source = f"[{match.group(2)}]"
+    python_args = arguments_source.replace("true", "True").replace("false", "False")
+    arguments = ast.literal_eval(python_args)
+
+    if not isinstance(arguments, list):
+        raise ValueError("invalid action arguments")
+
+    if action_type == "classify" and len(arguments) == 4:
         return SupportAction(
             action_type="classify",
-            ticket_id=ticket.ticket_id,
-            internal_note="Inference baseline classification.",
-            **classify_payload,
+            ticket_id=str(arguments[0]),
+            category=str(arguments[1]),
+            priority=str(arguments[2]),
+            route_to=str(arguments[3]),
+            internal_note="API-guided triage classification.",
         )
 
-    if ticket.last_response_template is None:
-        template_key = str(adjustments.get("template_key", _response_policy(ticket_data)))
+    if action_type == "respond" and len(arguments) == 2:
         return SupportAction(
             action_type="respond",
-            ticket_id=ticket.ticket_id,
-            template_key=template_key,
-            internal_note="Inference baseline response.",
+            ticket_id=str(arguments[0]),
+            template_key=str(arguments[1]),
+            internal_note="API-guided customer response.",
         )
 
-    return SupportAction(
-        action_type="resolve",
-        ticket_id=ticket.ticket_id,
-        internal_note="Inference baseline resolution.",
-        **_resolution_policy(ticket_data),
-    )
+    if action_type == "resolve" and len(arguments) == 3:
+        return SupportAction(
+            action_type="resolve",
+            ticket_id=str(arguments[0]),
+            resolution=str(arguments[1]),
+            close_ticket=bool(arguments[2]),
+            internal_note="API-guided resolution.",
+        )
+
+    raise ValueError("unsupported action signature")
 
 
-def _next_heuristic_action(observation: SupportObservation) -> SupportAction:
+def _heuristic_action_string(observation: SupportObservation) -> str:
     for ticket in observation.tickets:
+        if ticket.current_category is None:
+            if "security" in ticket.tags or "account_compromise" in ticket.tags:
+                return f"classify({_quote(ticket.ticket_id)},'security','urgent','security')"
+            if "abuse_report" in ticket.tags or "safety" in ticket.tags:
+                return f"classify({_quote(ticket.ticket_id)},'trust_safety','urgent','trust_safety')"
+            if "legal" in ticket.tags or "data_request" in ticket.tags:
+                return f"classify({_quote(ticket.ticket_id)},'legal_request','high','trust_safety')"
+            if "outage" in ticket.tags or "checkout" in ticket.tags:
+                return f"classify({_quote(ticket.ticket_id)},'technical_outage','urgent','tech_ops')"
+            if "shipping" in ticket.tags or "carrier_delay" in ticket.tags:
+                return f"classify({_quote(ticket.ticket_id)},'shipping','medium','logistics')"
+            if "refund" in ticket.tags or "duplicate_charge" in ticket.tags or "duplicate_order" in ticket.tags:
+                priority = "medium"
+                if (
+                    "duplicate_charge" in ticket.tags
+                    or ticket.customer_tier in {"pro", "vip"}
+                    or ticket.prior_contacts >= 2
+                    or ticket.sla_hours_remaining <= 4
+                    or ticket.hours_open >= 24
+                ):
+                    priority = "high"
+                return f"classify({_quote(ticket.ticket_id)},'billing',{_quote(priority)},'billing')"
+            return f"classify({_quote(ticket.ticket_id)},'account_access','high','frontline')"
+
+        if ticket.last_response_template is None:
+            if ticket.current_category == "security":
+                return f"respond({_quote(ticket.ticket_id)},'security_lockdown_notice')"
+            if ticket.current_category == "trust_safety":
+                return f"respond({_quote(ticket.ticket_id)},'trust_safety_report_received')"
+            if ticket.current_category == "legal_request":
+                return f"respond({_quote(ticket.ticket_id)},'legal_request_acknowledgement')"
+            if ticket.current_category == "technical_outage":
+                return f"respond({_quote(ticket.ticket_id)},'vip_outage_update')"
+            if ticket.current_category == "shipping":
+                return f"respond({_quote(ticket.ticket_id)},'shipping_delay_empathy')"
+            if ticket.current_category == "billing" and "duplicate_charge" in ticket.tags:
+                return f"respond({_quote(ticket.ticket_id)},'duplicate_charge_escalation')"
+            if ticket.current_category == "billing":
+                return f"respond({_quote(ticket.ticket_id)},'billing_refund_acknowledgement')"
+            return f"respond({_quote(ticket.ticket_id)},'password_reset_instructions')"
+
         if ticket.resolution is None:
-            return _baseline_action(observation.task_id, ticket)
+            if ticket.current_category == "security":
+                return f"resolve({_quote(ticket.ticket_id)},'security_escalation_opened',false)"
+            if ticket.current_category == "trust_safety":
+                return f"resolve({_quote(ticket.ticket_id)},'trust_safety_escalated',false)"
+            if ticket.current_category == "legal_request":
+                return f"resolve({_quote(ticket.ticket_id)},'legal_review_queued',false)"
+            if ticket.current_category == "technical_outage":
+                return f"resolve({_quote(ticket.ticket_id)},'incident_escalated',false)"
+            if ticket.current_category == "shipping":
+                return f"resolve({_quote(ticket.ticket_id)},'awaiting_carrier_followup',false)"
+            if ticket.current_category == "billing" and "duplicate_charge" in ticket.tags:
+                return f"resolve({_quote(ticket.ticket_id)},'billing_investigation_opened',false)"
+            if ticket.current_category == "billing":
+                return f"resolve({_quote(ticket.ticket_id)},'refund_issued',true)"
+            return f"resolve({_quote(ticket.ticket_id)},'reset_link_sent',true)"
 
-    return SupportAction(
-        action_type="classify",
-        ticket_id=observation.tickets[0].ticket_id,
-        category=observation.tickets[0].current_category or "general_support",
-        priority=observation.tickets[0].current_priority or "medium",
-        route_to=observation.tickets[0].current_route or "frontline",
-        internal_note="Fallback no-op.",
-    )
+    ticket = observation.tickets[0]
+    return f"respond({_quote(ticket.ticket_id)},{_quote(ticket.allowed_templates[0])})"
 
 
-def _safe_action_json(action: SupportAction) -> Dict[str, Any]:
-    return {
-        "action_type": action.action_type,
-        "ticket_id": action.ticket_id,
-        "category": action.category,
-        "priority": action.priority,
-        "route_to": action.route_to,
-        "template_key": action.template_key,
-        "resolution": action.resolution,
-        "internal_note": action.internal_note,
-        "close_ticket": action.close_ticket,
+def _build_messages(observation: SupportObservation) -> List[Dict[str, str]]:
+    user_payload = {
+        "task_id": observation.task_id,
+        "task_title": observation.task_title,
+        "objective": observation.objective,
+        "step_count": observation.queue_summary.step_count,
+        "max_steps": observation.queue_summary.max_steps,
+        "last_event": observation.last_event,
+        "hints": observation.hints,
+        "tickets": [_ticket_payload(ticket) for ticket in observation.tickets],
     }
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": str(user_payload)},
+    ]
 
 
-def _parse_model_action(payload: str) -> Optional[SupportAction]:
-    try:
-        data = json.loads(payload)
-        return SupportAction(**data)
-    except Exception:
-        return None
-
-
-def _request_model_action(client: Optional[OpenAI], observation: SupportObservation, candidate: SupportAction) -> SupportAction:
-    global MODEL_REVIEW_ENABLED
-    if client is None or not MODEL_REVIEW_ENABLED:
-        return candidate
-
-    tickets = [_ticket_to_dict(ticket) for ticket in observation.tickets]
-
-    user_prompt = json.dumps(
-        {
-            "task_id": observation.task_id,
-            "objective": observation.objective,
-            "tickets": tickets,
-            "candidate_action": _safe_action_json(candidate),
-        }
-    )
-
+def _request_action_string(client: OpenAI, observation: SupportObservation) -> str:
+    fallback = _heuristic_action_string(observation)
     try:
         response = client.chat.completions.create(
             model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-            response_format={"type": "json_object"},
+            messages=_build_messages(observation),
+            temperature=0,
+            max_tokens=MAX_OUTPUT_TOKENS,
         )
-
-        content = (response.choices[0].message.content or "").strip()
-        parsed = _parse_model_action(content)
-        return parsed or candidate
-
-    except Exception:
-        MODEL_REVIEW_ENABLED = False
+        content = response.choices[0].message.content or ""
+        candidate = _single_line(content)
+        _parse_action_string(candidate)
         return candidate
+    except Exception:
+        return fallback
 
 
-def _action_str(action: SupportAction) -> str:
-    return json.dumps(
-        {k: v for k, v in _safe_action_json(action).items() if v not in (None, "", False)},
-        separators=(",", ":"),
-    )
-
-
-def run_task(client: Optional[OpenAI], task_id: str) -> Dict[str, Any]:
+def _run_task(client: OpenAI, task_name: str) -> Tuple[bool, int, List[float]]:
     env = SupportOpsEnvironment()
-    observation = env.reset(task_id=task_id)
-
-    rewards: List[int] = []
-    steps_taken = 0
-
-    log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
+    observation = env.reset(task_id=task_name)
+    rewards: List[float] = []
+    steps = 0
+    log_start(task_name=task_name, env_name=BENCHMARK, model_name=MODEL_NAME)
 
     try:
-        for step in range(1, observation.queue_summary.max_steps + 1):
-            if observation.done:
+        while not observation.done:
+            step_number = steps + 1
+            action_str = ""
+            reward_value = 0.0
+            done_value = False
+            error_text: Optional[str] = None
+
+            try:
+                action_str = _request_action_string(client, observation)
+                action = _parse_action_string(action_str)
+                observation = env.step(action)
+                reward_value = float(observation.reward or 0.0)
+                done_value = bool(observation.done)
+            except Exception as exc:
+                error_text = str(exc)
+                done_value = True
+                try:
+                    observation = observation.model_copy(update={"done": True})
+                except Exception:
+                    pass
+
+            rewards.append(reward_value)
+            steps = step_number
+            log_step(
+                step=step_number,
+                action_str=action_str or "null_action()",
+                reward=reward_value,
+                done=done_value,
+                error=error_text,
+            )
+
+            if done_value:
                 break
-
-            action = _request_model_action(client, observation, _next_heuristic_action(observation))
-            observation = env.step(action)
-
-            reward = int(observation.reward or 0)
-            rewards.append(reward)
-            steps_taken = step
-
-            log_step(step, _action_str(action), reward, observation.done, None)
-
-            if observation.done:
-                break
-
     finally:
-        score, report = grade_episode(env.state)
-        success = score >= SUCCESS_SCORE_THRESHOLD
-        log_end(success, steps_taken, score, rewards)
+        _score, _report = grade_episode(env.state)
+        success = bool(env.state.completed and env.state.failure_reason is None)
+        log_end(success=success, steps=steps, rewards=rewards)
 
-    return {"task_id": task_id, "score": score, "report": report}
+    return success, steps, rewards
+
+
+def validate_output_format() -> None:
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        log_start("demo_task", BENCHMARK, MODEL_NAME)
+        log_step(1, "click('123')", 1, False, None)
+        log_step(2, "fill('456','text')", -2.5, False, "temporary issue")
+        log_step(3, "click('789')", 0, True, None)
+        log_end(True, 3, [1, -2.5, 0])
+
+    lines = buffer.getvalue().splitlines()
+    expected = [
+        f"[START] task=demo_task env={BENCHMARK} model={MODEL_NAME}",
+        "[STEP] step=1 action=click('123') reward=1.00 done=false error=null",
+        "[STEP] step=2 action=fill('456','text') reward=-2.50 done=false error=temporary issue",
+        "[STEP] step=3 action=click('789') reward=0.00 done=true error=null",
+        "[END] success=true steps=3 rewards=1.00,-2.50,0.00",
+    ]
+    if lines != expected:
+        raise AssertionError("output format validation failed")
 
 
 def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN, timeout=12.0) if MODEL_REVIEW_ENABLED else None
-
+    _configure_stdout()
+    validate_output_format()
+    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN, timeout=REQUEST_TIMEOUT_SECONDS)
     for task in TASKS:
-        run_task(client, str(task["id"]))
+        _run_task(client, str(task["id"]))
 
 
 if __name__ == "__main__":
