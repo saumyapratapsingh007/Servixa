@@ -13,18 +13,11 @@ WEIGHTS: Dict[str, float] = {
     "resolution": 0.20,
     "closure": 0.10,
 }
+
 _EPSILON = 1e-4
 
 
-def to_score_percent(value: float) -> int:
-    return int(round(value * 100))
-
-
 def _strict_unit_interval(value: float) -> float:
-    """
-    Submission validators require task scores to be strictly inside (0, 1).
-    Keep rounding stable for reporting while avoiding exact boundary values.
-    """
     bounded = min(1.0 - _EPSILON, max(_EPSILON, value))
     return round(bounded, 4)
 
@@ -68,14 +61,16 @@ def grade_state(state: SupportState) -> Dict[str, object]:
 
     ticket_scores: List[Dict[str, object]] = []
     raw_scores: List[float] = []
+
     for ticket in state.tickets:
         breakdown = _ticket_breakdown(ticket)
         raw_score = _strict_unit_interval(sum(breakdown.values()))
         raw_scores.append(raw_score)
+
         ticket_scores.append(
             {
                 "ticket_id": ticket.ticket_id,
-                "score": to_score_percent(raw_score),
+                "score": raw_score,
                 "breakdown": breakdown,
                 "closed": ticket.closed,
                 "route": ticket.current_route,
@@ -84,12 +79,16 @@ def grade_state(state: SupportState) -> Dict[str, object]:
         )
 
     base_score = sum(raw_scores) / len(raw_scores)
+
     expected_steps = len(state.tickets) * 3
     overage = max(0, state.step_count - expected_steps)
+
     efficiency_penalty = min(0.18, overage * 0.02)
+
     final_score = _strict_unit_interval(base_score - efficiency_penalty)
 
     tickets_completed = sum(1 for score in raw_scores if score >= 0.75)
+
     return {
         "task_id": state.task_id,
         "score": final_score,
@@ -106,4 +105,12 @@ def grade_state(state: SupportState) -> Dict[str, object]:
 
 def grade_episode(state: SupportState) -> Tuple[float, Dict[str, object]]:
     report = grade_state(state)
-    return float(report["score"]), report
+
+    score = float(report["score"])
+
+    if score <= 0.0:
+        score = 0.0001
+    elif score >= 1.0:
+        score = 0.9999
+
+    return score, report
