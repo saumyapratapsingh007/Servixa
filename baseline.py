@@ -145,11 +145,18 @@ def run_baseline() -> Dict[str, object]:
             }
         )
 
-    return {
-        "tasks": list_task_summaries(),
-        "results": results,
-        "average_score": round(sum(per_task_scores) / len(per_task_scores), 4),
-    }
+   avg = sum(per_task_scores) / len(per_task_scores)
+
+if avg <= 0.0:
+    avg = 0.0001
+elif avg >= 1.0:
+    avg = 0.9999
+
+return {
+    "tasks": list_task_summaries(),
+    "results": results,
+    "average_score": round(avg, 4),
+}
 
 
 if __name__ == "__main__":
