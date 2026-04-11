@@ -23,9 +23,9 @@ class TicketView(BaseModel):
     sla_hours_remaining: int
     sentiment: str
     prior_contacts: int
-    tags: List[str] = []
-    visible_notes: List[str] = []
-    allowed_templates: List[str] = []
+    tags: List[str] = Field(default_factory=list)
+    visible_notes: List[str] = Field(default_factory=list)
+    allowed_templates: List[str] = Field(default_factory=list)
     current_status: str
     current_category: Optional[str] = None
     current_priority: Optional[str] = None
@@ -62,11 +62,11 @@ class SupportObservation(Observation):
     task_title: str
     objective: str
     queue_summary: QueueSummary
-    tickets: List[TicketView] = []
+    tickets: List[TicketView] = Field(default_factory=list)
     last_event: str = ""
     progress_score: float = Field(default=0.0, ge=0.0, le=1.0)
     reward_details: SupportReward = Field(default_factory=lambda: SupportReward(score=0.0))
-    hints: List[str] = []
+    hints: List[str] = Field(default_factory=list)
 
 
 class TicketState(BaseModel):
@@ -88,9 +88,9 @@ class TicketState(BaseModel):
     sla_hours_remaining: int
     sentiment: str
     prior_contacts: int
-    tags: List[str] = []
-    allowed_templates: List[str] = []
-    visible_notes: List[str] = []
+    tags: List[str] = Field(default_factory=list)
+    allowed_templates: List[str] = Field(default_factory=list)
+    visible_notes: List[str] = Field(default_factory=list)
     current_status: str = "open"
     current_category: Optional[str] = None
     current_priority: Optional[str] = None
@@ -98,7 +98,7 @@ class TicketState(BaseModel):
     last_response_template: Optional[str] = None
     resolution: Optional[str] = None
     closed: bool = False
-    action_log: List[Dict[str, Any]] = []
+    action_log: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class SupportState(State):
@@ -110,6 +110,6 @@ class SupportState(State):
     progress_score: float = 0.0
     completed: bool = False
     failure_reason: Optional[str] = None
-    guidance: List[str] = []
-    tickets: List[TicketState] = []
-    action_history: List[Dict[str, Any]] = []
+    guidance: List[str] = Field(default_factory=list)
+    tickets: List[TicketState] = Field(default_factory=list)
+    action_history: List[Dict[str, Any]] = Field(default_factory=list)
