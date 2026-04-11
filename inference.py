@@ -60,23 +60,16 @@ def _reward_text(value: float) -> str:
 
 
 def log_start(task_name: str, env_name: str, model_name: str) -> None:
-    print(
-        f"[START] task={_single_line(task_name)} env={_single_line(env_name)} model={_single_line(model_name)}",
-        flush=True,
-    )
+    print(f"[START] task={_single_line(task_name)} env={_single_line(env_name)} model={_single_line(model_name)}", flush=True)
 
 
 def log_step(step: int, action_str: str, reward: float, done: bool, error: Optional[str]) -> None:
     error_value = "null" if error is None else _single_line(error)
-    print(
-        f"[STEP] step={step} action={_single_line(action_str)} reward={_reward_text(reward)} "
-        f"done={_bool_text(done)} error={error_value}",
-        flush=True,
-    )
+    print(f"[STEP] step={step} action={_single_line(action_str)} reward={_reward_text(reward)} done={_bool_text(done)} error={error_value}", flush=True)
 
 
 def log_end(success: bool, steps: int, rewards: List[float]) -> None:
-    reward_values = ",".join(_reward_text(reward) for reward in rewards)
+    reward_values = ",".join(_reward_text(r) for r in rewards)
     print(f"[END] success={_bool_text(success)} steps={steps} rewards={reward_values}", flush=True)
 
 
@@ -277,20 +270,14 @@ def _run_task(client: OpenAI, task_name: str) -> Tuple[bool, int, List[float]]:
 
             rewards.append(reward_value)
             steps = step_number
-            log_step(
-                step=step_number,
-                action_str=action_str or "null_action()",
-                reward=reward_value,
-                done=done_value,
-                error=error_text,
-            )
+            log_step(step_number, action_str or "null_action()", reward_value, done_value, error_text)
 
             if done_value:
                 break
     finally:
-        _score, _report = grade_episode(env.state)
-        success = bool(env.state.completed and env.state.failure_reason is None)
-        log_end(success=success, steps=steps, rewards=rewards)
+        score, _report = grade_episode(env.state)
+        success = score >= 0.90
+        log_end(success, steps, rewards)
 
     return success, steps, rewards
 
